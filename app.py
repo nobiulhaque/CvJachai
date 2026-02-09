@@ -1,7 +1,5 @@
 from fastapi import FastAPI, UploadFile, Form, File
 from fastapi.responses import JSONResponse
-from sentence_transformers import SentenceTransformer, util
-import torch
 from typing import List, Optional
 import os
 import tempfile
@@ -12,14 +10,15 @@ from utils import (
     extract_all_resume_texts,
     calculate_skill_bonus
 )
+from model import create_model, get_available_models
 
 # Initialize FastAPI app
 app = FastAPI(title="Resume Ranker API", version="1.0.0")
 
 # Load the embedding model (all-MiniLM-L6-v2)
-print("Loading sentence transformer model...")
-model = SentenceTransformer('all-MiniLM-L6-v2')
-print("Model loaded successfully!")
+# Change 'all-MiniLM-L6-v2' to any other model from get_available_models()
+MODEL_NAME = 'all-MiniLM-L6-v2'
+model = create_model(MODEL_NAME)
 
 # Store for cleanup
 temp_dirs = []
@@ -76,16 +75,16 @@ async def rank_resumes(
         
         # Compute embeddings for job circular and resumes
         print("Computing embeddings...")
-        job_embedding = model.encode(job_circular, convert_to_tensor=True)
+        job_embedding = model.encode_text(job_circular)
         
         # Compute similarity scores
         results = []
         
         for filename, resume_text in resume_texts.items():
-            resume_embedding = model.encode(resume_text, convert_to_tensor=True)
+            resume_embedding = model.encode_text(resume_text)
             
             # Compute cosine similarity
-            similarity_score = util.pytorch_cos_sim(job_embedding, resume_embedding).item()
+            similarity_score = model.compute_similarity(job_embedding, resume_embedding)
             
             # Add skill/experience bonus if provided
             bonus_score = 0.0
@@ -136,7 +135,7 @@ def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "model": "all-MiniLM-L6-v2",
+        "model_info": model.get_model_info(),
         "message": "Resume Ranker API is running"
     }
 
@@ -147,13 +146,14 @@ def root():
     return {
         "name": "Resume Ranker API",
         "version": "1.0.0",
+        "current_model": model.get_model_info(),
+        "available_models": get_available_models(),
         "endpoints": {
             "POST /rank_resumes": "Rank resumes based on job circular",
             "GET /health": "Health check",
             "GET /": "API info"
         },
-        "supported_formats": ["PDF", "DOCX", "TXT", "ZIP"],
-        "model": "all-MiniLM-L6-v2"
+        "supported_formats": ["PDF", "DOCX", "TXT", "ZIP"]
     }
 
 
