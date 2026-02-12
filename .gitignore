@@ -21,3 +21,6 @@ Thumbs.db
 # Data (keep directory, ignore contents)
 data/*
 !data/.gitkeep
+
+# Model binaries (large files)
+models/*.pkl

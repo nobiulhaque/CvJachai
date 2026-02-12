@@ -2,24 +2,27 @@
 Django REST Framework views for Resume Classifier API.
 """
 
-from rest_framework.views import APIView
+import logging
+import shutil
+import tempfile
+
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
 )
-from rest_framework.parsers import MultiPartParser, FormParser
-import tempfile
-import shutil
-import os
+from rest_framework.views import APIView
 
 from model import create_classifier
+from serializers import ResumeUploadSerializer
 from utils import (
     process_resume_files,
     extract_all_resume_texts,
     calculate_skill_bonus,
     calculate_job_relevance,
 )
-from serializers import ResumeUploadSerializer
+
+logger = logging.getLogger(__name__)
 
 # Initialize the classifier
 classifier = create_classifier(model_dir="models")
@@ -126,14 +129,14 @@ class ResumeClassifyAPIView(APIView):
                 status=HTTP_400_BAD_REQUEST
             )
         except Exception as e:
-            print(f"Error: {str(e)}")
+            logger.exception("Error classifying resumes")
             return Response(
-                {"error": f"Internal server error: {str(e)}"},
+                {"error": f"Internal server error: {e}"},
                 status=HTTP_500_INTERNAL_SERVER_ERROR
             )
         finally:
             # Cleanup temporary directory
-            if temp_dir and os.path.exists(temp_dir):
+            if temp_dir:
                 shutil.rmtree(temp_dir, ignore_errors=True)
 
 

@@ -2,11 +2,14 @@
 Model loading and prediction module for LightGBM classifier.
 """
 
-import joblib
 import json
+import logging
 import os
+
+import joblib
 import numpy as np
-from typing import Dict, List
+
+logger = logging.getLogger(__name__)
 
 
 class ResumeClassifier:
@@ -26,11 +29,11 @@ class ResumeClassifier:
     
     def _load_model(self):
         """Load the trained LightGBM model and preprocessing objects."""
-        print("Loading model artifacts...")
+        logger.info("Loading model artifacts...")
         self.model = joblib.load(os.path.join(self.model_dir, "best_classifier.pkl"))
         self.tfidf_vectorizer = joblib.load(os.path.join(self.model_dir, "tfidf_vectorizer.pkl"))
         self.scaler = joblib.load(os.path.join(self.model_dir, "scaler.pkl"))
-        print("Model loaded successfully!")
+        logger.info("Model loaded successfully!")
     
     def _load_metadata(self):
         """Load model metadata including categories and skill list."""
@@ -38,7 +41,7 @@ class ResumeClassifier:
             self.model_metadata = json.load(f)
         self.categories = self.model_metadata.get('categories', [])
         self.skill_list = self.model_metadata.get('skill_list', [])
-        print(f"Loaded {len(self.categories)} categories, {len(self.skill_list)} skills")
+        logger.info("Loaded %d categories, %d skills", len(self.categories), len(self.skill_list))
     
     def _build_features(self, resume_text: str) -> np.ndarray:
         """
@@ -66,7 +69,7 @@ class ResumeClassifier:
         
         return np.hstack([tfidf_vec, skill_features, extra])
     
-    def predict(self, resume_text: str) -> Dict:
+    def predict(self, resume_text: str) -> dict:
         """Predict job category for a single resume."""
         features = self._build_features(resume_text)
         scaled = self.scaler.transform(features)
@@ -86,11 +89,11 @@ class ResumeClassifier:
             "all_predictions": all_preds,
         }
     
-    def predict_batch(self, resume_texts: Dict[str, str]) -> Dict[str, Dict]:
+    def predict_batch(self, resume_texts: dict[str, str]) -> dict[str, dict]:
         """Predict categories for multiple resumes."""
         return {fn: self.predict(text) for fn, text in resume_texts.items()}
     
-    def get_model_info(self) -> Dict:
+    def get_model_info(self) -> dict:
         """Return information about the loaded model."""
         return {
             "model_type": "LightGBM Classifier",
@@ -101,7 +104,7 @@ class ResumeClassifier:
             "categories_sample": self.categories[:5],
         }
     
-    def get_categories(self) -> List[str]:
+    def get_categories(self) -> list[str]:
         """Return list of all job categories."""
         return self.categories
 

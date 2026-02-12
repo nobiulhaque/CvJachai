@@ -1,35 +1,32 @@
+import logging
 import os
-import zipfile
 import tempfile
+import zipfile
 from pathlib import Path
-from typing import Dict, List
 
 from PyPDF2 import PdfReader
 from docx import Document
+
+logger = logging.getLogger(__name__)
 
 
 def extract_text_from_pdf(pdf_path: str) -> str:
     """Extract text from a PDF file."""
     try:
         reader = PdfReader(pdf_path)
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text()
-        return text.strip()
+        pages = [page.extract_text() or "" for page in reader.pages]
+        return "\n".join(pages).strip()
     except Exception as e:
-        raise Exception(f"Error extracting text from PDF {pdf_path}: {str(e)}")
+        raise Exception(f"Error extracting text from PDF {pdf_path}: {e}")
 
 
 def extract_text_from_docx(docx_path: str) -> str:
     """Extract text from a DOCX file."""
     try:
         doc = Document(docx_path)
-        text = ""
-        for paragraph in doc.paragraphs:
-            text += paragraph.text + "\n"
-        return text.strip()
+        return "\n".join(p.text for p in doc.paragraphs).strip()
     except Exception as e:
-        raise Exception(f"Error extracting text from DOCX {docx_path}: {str(e)}")
+        raise Exception(f"Error extracting text from DOCX {docx_path}: {e}")
 
 
 def extract_text_from_txt(txt_path: str) -> str:
@@ -38,7 +35,7 @@ def extract_text_from_txt(txt_path: str) -> str:
         with open(txt_path, 'r', encoding='utf-8', errors='ignore') as f:
             return f.read().strip()
     except Exception as e:
-        raise Exception(f"Error extracting text from TXT {txt_path}: {str(e)}")
+        raise Exception(f"Error extracting text from TXT {txt_path}: {e}")
 
 
 def extract_text_from_file(file_path: str) -> str:
@@ -55,7 +52,7 @@ def extract_text_from_file(file_path: str) -> str:
         raise ValueError(f"Unsupported file format: {ext}")
 
 
-def extract_resumes_from_zip(zip_path: str, temp_dir: str) -> Dict[str, str]:
+def extract_resumes_from_zip(zip_path: str, temp_dir: str) -> dict[str, str]:
     """
     Extract all resumes from a ZIP file.
     Returns dict: {filename: file_path}
@@ -75,10 +72,10 @@ def extract_resumes_from_zip(zip_path: str, temp_dir: str) -> Dict[str, str]:
         
         return resumes
     except Exception as e:
-        raise Exception(f"Error extracting ZIP file: {str(e)}")
+        raise Exception(f"Error extracting ZIP file: {e}")
 
 
-def process_resume_files(files: List, temp_dir: str = None) -> Dict[str, str]:
+def process_resume_files(files: list, temp_dir: str = None) -> dict[str, str]:
     """
     Process multiple resume files (can be mixed types: PDF, DOCX, TXT).
     Returns dict: {filename: file_path}
@@ -107,7 +104,7 @@ def process_resume_files(files: List, temp_dir: str = None) -> Dict[str, str]:
     return resumes
 
 
-def extract_all_resume_texts(resumes: Dict[str, str]) -> Dict[str, str]:
+def extract_all_resume_texts(resumes: dict[str, str]) -> dict[str, str]:
     """
     Extract text from all resume files.
     Returns dict: {filename: extracted_text}
@@ -118,7 +115,7 @@ def extract_all_resume_texts(resumes: Dict[str, str]) -> Dict[str, str]:
             text = extract_text_from_file(file_path)
             resume_texts[filename] = text
         except Exception as e:
-            print(f"Warning: Could not extract text from {filename}: {str(e)}")
+            logger.warning("Could not extract text from %s: %s", filename, e)
     
     return resume_texts
 
