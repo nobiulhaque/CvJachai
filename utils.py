@@ -2,7 +2,7 @@ import os
 import zipfile
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from PyPDF2 import PdfReader
 from docx import Document
@@ -88,21 +88,21 @@ def process_resume_files(files: List, temp_dir: str = None) -> Dict[str, str]:
         temp_dir = tempfile.mkdtemp()
     
     for file in files:
-        # Save uploaded file to temp directory
-        temp_path = os.path.join(temp_dir, file.filename)
+        filename = os.path.basename(file.name)
+        temp_path = os.path.join(temp_dir, filename)
         with open(temp_path, 'wb') as f:
-            f.write(file.file.read())
+            f.write(file.read())
         
-        ext = Path(file.filename).suffix.lower()
+        ext = Path(filename).suffix.lower()
         
         # If it's a ZIP, extract contents
         if ext == '.zip':
             extracted = extract_resumes_from_zip(temp_path, temp_dir)
             resumes.update(extracted)
         elif ext in ['.pdf', '.docx', '.txt']:
-            resumes[file.filename] = temp_path
+            resumes[filename] = temp_path
         else:
-            raise ValueError(f"Unsupported file format: {file.filename}")
+            raise ValueError(f"Unsupported file format: {filename}")
     
     return resumes
 
@@ -123,46 +123,35 @@ def extract_all_resume_texts(resumes: Dict[str, str]) -> Dict[str, str]:
     return resume_texts
 
 
-def calculate_skill_bonus(resume_text: str, skills: List[str], 
-                         min_experience: int = 0) -> float:
+def calculate_skill_bonus(resume_text: str, skills: list, min_experience: int = 0) -> float:
     """
     Calculate bonus score based on skills and experience found in resume.
-    
-    Args:
-        resume_text: The resume text
-        skills: List of required/desired skills
-        min_experience: Minimum years of experience required
-    
-    Returns:
-        Bonus score (0.0 to 1.0)
+    Returns a score between 0.0 and 1.0.
     """
     bonus = 0.0
     resume_lower = resume_text.lower()
-    
-    # Check for each skill
+
     if skills:
-        skills_found = 0
-        for skill in skills:
-            if skill.lower() in resume_lower:
-                skills_found += 1
-        
-        # Award bonus for skills found (max 0.5)
-        if len(skills) > 0:
-            bonus += (skills_found / len(skills)) * 0.5
-    
-    # Check for years of experience
+        found = sum(1 for s in skills if s.lower() in resume_lower)
+        bonus += (found / len(skills)) * 0.5
+
     if min_experience > 0:
-        # Simple heuristic: look for common experience phrases
-        experience_indicators = (
-            [
-                f"{min_experience}+ years",
-                f"{min_experience} years",
-            ] + [f"{min_experience + i} years" for i in range(1, 20)]
-        )
-        
-        for indicator in experience_indicators:
-            if indicator.lower() in resume_lower:
-                bonus += 0.3  # Award 0.3 bonus if experience found
+        for yrs in range(min_experience, min_experience + 20):
+            if f"{yrs} years" in resume_lower or f"{yrs}+ years" in resume_lower:
+                bonus += 0.3
                 break
-    
-    return min(bonus, 1.0)  # Cap at 1.0
+
+    return min(bonus, 1.0)
+
+
+def calculate_job_relevance(resume_text: str, job_circular: str) -> float:
+    """
+    Calculate keyword-overlap relevance between a resume and a job circular.
+    Returns a score between 0.0 and 1.0.
+    """
+    job_words = set(job_circular.lower().split())
+    resume_words = set(resume_text.lower().split())
+    if not job_words:
+        return 0.0
+    overlap = job_words & resume_words
+    return len(overlap) / len(job_words)
