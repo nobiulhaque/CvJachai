@@ -1,80 +1,28 @@
 {
   "best_model": "LightGBM",
-  "cv_accuracy": 0.8986494594697163,
-  "cv_std": 0.003372483328734359,
+  "cv_accuracy": 0.7544776119402985,
+  "cv_std": 0.02706512692369683,
   "all_cv_results": {
     "Random Forest": {
-      "mean": 0.8882965804147578,
-      "std": 0.0060503704901443
+      "mean": 0.7455662862159789,
+      "std": 0.03282731012322976
     },
     "CatBoost": {
-      "mean": 0.893230677727221,
-      "std": 0.006193502881037208
+      "mean": 0.7456540825285339,
+      "std": 0.027686271700935516
     },
     "LightGBM": {
-      "mean": 0.8986494594697163,
-      "std": 0.003372483328734359
+      "mean": 0.7544776119402985,
+      "std": 0.02706512692369683
     }
   },
   "train_accuracy": 1.0,
   "categories": [
-    "accountant",
-    "accounts",
-    "administration",
-    "advocate",
-    "agriculture",
-    "ai-engineer",
-    "apparel",
-    "arts",
-    "asst.-manager/-manger-(administrative)",
-    "automobile",
-    "aviation",
-    "banking",
-    "bpo",
-    "business-development",
-    "business-development-executive",
-    "chef",
-    "civil-engineer",
-    "construction",
-    "consultant",
-    "data-engineer",
-    "data-science-engineer",
-    "database-administrator-(dba)",
-    "designer",
-    "devops-engineer",
-    "digital-media",
-    "engineering",
-    "executive---vat",
-    "executive/-senior-executive--trade-marketing,-hygiene-products",
-    "executive/-sr.-executive--it",
-    "finance",
-    "fitness",
-    "full-stack-developer-(python,react-js)",
-    "head-of-internal-control-&-compliance-(icc)---sevp/dmd",
-    "healthcare",
-    "hr",
-    "hr-officer",
-    "information-technology",
-    "intern-(generative-ai-engineering---2d/3d-image-generation)",
-    "machine-learning-(ml)-engineer",
-    "management-trainee---mechanical",
-    "manager--human-resource-management-(hrm)",
-    "marketing-officer",
-    "mechanical-designer",
-    "mechanical-engineer",
-    "network-support-engineer",
-    "peon",
-    "project-coordinator-(civil)",
-    "public-relations",
-    "research",
-    "sales",
-    "senior-ios-engineer",
-    "senior-software-engineer",
-    "site-engineer",
-    "sr.officer-/-executive---internal-audit",
-    "system-administrator-(operation-&-maintenance-of-server,-storage-&-service-desk-system)",
-    "teacher",
-    "technical"
+    "accounts-officers",
+    "administration-officers",
+    "peion",
+    "research-assistants",
+    "technical-roles"
   ],
   "skill_list": [
     "python",
@@ -798,5 +746,5 @@
   "num_skill_features": 721,
   "num_tfidf_features": 200,
   "total_features": 921,
-  "total_samples": 12363
+  "total_samples": 338
 }
