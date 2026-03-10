@@ -5,6 +5,7 @@ Model loading and prediction module for LightGBM classifier.
 import json
 import logging
 import os
+from typing import Any
 
 import joblib
 import numpy as np
@@ -17,12 +18,12 @@ class ResumeClassifier:
     
     def __init__(self, model_dir: str = "models"):
         self.model_dir = model_dir
-        self.model = None
-        self.tfidf_vectorizer = None
-        self.scaler = None
-        self.categories = None
-        self.skill_list = None
-        self.model_metadata = None
+        self.model: Any = None
+        self.tfidf_vectorizer: Any = None
+        self.scaler: Any = None
+        self.categories: list[str] = []
+        self.skill_list: list[str] = []
+        self.model_metadata: dict = {}
         
         self._load_model()
         self._load_metadata()
