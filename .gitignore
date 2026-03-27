@@ -24,3 +24,8 @@ data/*
 
 # Model binaries (large files)
 models/*.pkl
+
+# Document files
+*.pdf
+*.txt
+!requirements.txt
