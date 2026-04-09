@@ -19,6 +19,7 @@ class APIInfoAPIView(APIView):
             "supported_formats": ["PDF", "DOCX", "TXT", "ZIP", "PNG", "JPG", "JPEG"],
             "endpoints": {
                 "POST /api/classify": "Analyse and rank resumes. Supports batch uploads and images.",
+                "POST /api/optimize": "Analyse and rewrite a resume for 100% ATS compatibility.",
                 "GET /api/": "View this documentation"
             },
             "features": [

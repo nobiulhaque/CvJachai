@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 
 from engine.model import create_classifier
 from engine.pretrained_classifier import semantic_reranker
-from engine.groq_engine import groq_matcher
+from engine.groq import groq_ranker, groq_base
 from api.serializers import ResumeUploadSerializer
 from engine.utils import (
     process_resume_files,
@@ -156,9 +156,9 @@ class ResumeClassifyAPIView(APIView):
 
             # ---- Stage 6: Stage 2 - Groq Final Judgement (Smart) ----
             final_scores = {}
-            if groq_matcher.available and top_for_groq:
+            if groq_base.available and top_for_groq:
                 logger.info("Stage 2: Sending top %d candidates to Groq judge...", len(top_for_groq))
-                final_scores = groq_matcher.match_batch(job_circular, top_for_groq)
+                final_scores = groq_ranker.rank_batch(job_circular, top_for_groq)
 
             # Final assembly of results
             results = []
@@ -223,7 +223,7 @@ class ResumeClassifyAPIView(APIView):
                 "job_circular_preview": (
                     job_circular[:200] + "..." if len(job_circular) > 200 else job_circular
                 ),
-                "analysis_engine": "Groq Hybrid" if groq_matcher.available else "Local Hybrid",
+                "analysis_engine": "Groq Hybrid" if groq_base.available else "Local Hybrid",
                 "skills_searched": skills_list or None,
                 "min_experience": min_experience if min_experience > 0 else None,
                 "total_resumes_provided": len(resumes),
