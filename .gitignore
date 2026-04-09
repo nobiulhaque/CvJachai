@@ -1,34 +1,16 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-
-# Virtual environment
-tf_env/
-
 # Django
+*.pyc
+__pycache__/
 db.sqlite3
-*.log
+media/
+staticfiles/
 
-# IDE
-.vscode/
-.idea/
+# Environments
+.env
+venv/
+env/
+ENV/
 
 # OS
-Thumbs.db
 .DS_Store
-
-# Data (keep directory, ignore contents)
-data/*
-!data/.gitkeep
-
-# Model binaries (large files)
-models/*.pkl
-
-# Document files
-*.pdf
-*.txt
-!requirements.txt
-
-# Environment variables
-.env
+Thumbs.db
