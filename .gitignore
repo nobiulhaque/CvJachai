@@ -29,3 +29,6 @@ models/*.pkl
 *.pdf
 *.txt
 !requirements.txt
+
+# Environment variables
+.env
