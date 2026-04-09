@@ -16,6 +16,14 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+    # AUTO-MIGRATE ON STARTUP (For Hugging Face / Production)
+    if any(arg in sys.argv for arg in ['runserver', 'gunicorn']) or os.getenv('K_SERVICE'):
+        try:
+            print("Auto-running migrations...")
+            execute_from_command_line(['manage.py', 'migrate', '--noinput'])
+        except Exception as e:
+            print(f"Migration error: {e}")
+
     execute_from_command_line(sys.argv)
 
 

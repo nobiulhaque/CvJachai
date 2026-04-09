@@ -57,7 +57,8 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        # Use /tmp for writable access on Hugging Face (non-root user)
+        'NAME': os.getenv('DB_PATH', '/tmp/db.sqlite3'),
     }
 }
 

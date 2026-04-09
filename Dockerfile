@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install Python dependencies
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
 COPY . /app/
@@ -28,5 +28,5 @@ ENV HOME=/home/user \
 
 EXPOSE 7860
 
-# Command to run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:7860", "--timeout", "120", "core.wsgi:application"]
+# Run migrations then start the server
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:7860 --timeout 120 core.wsgi:application"]
