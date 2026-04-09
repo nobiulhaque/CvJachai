@@ -9,16 +9,24 @@ class APIInfoAPIView(APIView):
         """Return API information."""
         
         response_data = {
-            "name": "Dynamic Resume Ranking API",
-            "version": "1.5.0",
-            "description": "Rank resumes dynamically against a job circular using semantic matching and skill analysis.",
-            "engine": "NLP-Powered Matcher",
+            "name": "CvJachai Resume Ranking Engine",
+            "version": "2.0.0",
+            "status": "Operational",
+            "architecture": "Hybrid AI (Cloud + Local)",
+            "primary_engine": "Groq Llama 3.1 (Global Judge)",
+            "fallback_engine": "Local NLI Transformer",
+            "extraction_engine": "Multi-threaded OCR & Text Parsers",
+            "supported_formats": ["PDF", "DOCX", "TXT", "ZIP", "PNG", "JPG", "JPEG"],
             "endpoints": {
-                "POST /api/classify": "Analyse and rank resumes against a job description",
-                "GET /api/": "API info"
+                "POST /api/classify": "Analyse and rank resumes. Supports batch uploads and images.",
+                "GET /api/": "View this documentation"
             },
-            "supported_formats": ["PDF", "DOCX", "TXT", "ZIP"],
-            "note": "This API does not use pre-selected categories; it matches resumes directly to your job circular text."
+            "features": [
+                "Dynamic Semantic Ranking",
+                "Automated Skill Extraction",
+                "Local-First OCR for Images",
+                "Blazing Fast CPU Inference"
+            ]
         }
         
         return Response(response_data, status=HTTP_200_OK)

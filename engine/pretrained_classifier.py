@@ -155,12 +155,15 @@ class SemanticReranker:
         if self._pipeline is not None:
             return
         # Import inside method so a missing package won't crash Django startup
-        from transformers import pipeline as hf_pipeline  # type: ignore[import-untyped]
+        from transformers import pipeline as hf_pipeline, logging as hf_logging
+        # Suppress the "UNEXPECTED" keys warning report for position_ids
+        hf_logging.set_verbosity_error()
+        
         logger.info("Loading pretrained model: %s …", self.MODEL_NAME)
         self._pipeline = hf_pipeline(
             "zero-shot-classification",
             model=self.MODEL_NAME,
-            device=-1,   # CPU; change to 0 if GPU is available
+            device=-1,   # CPU
         )
 
 

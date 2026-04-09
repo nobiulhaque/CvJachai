@@ -2,6 +2,7 @@ import logging
 import os
 import tempfile
 import zipfile
+import concurrent.futures
 from pathlib import Path
 
 from PyPDF2 import PdfReader
@@ -38,18 +39,22 @@ def extract_text_from_txt(txt_path: str) -> str:
         raise Exception(f"Error extracting text from TXT {txt_path}: {e}")
 
 
-_easyocr_reader = None
+_ocr_engine = None
 
 def extract_text_from_image(img_path: str) -> str:
-    """Extract text from an image using EasyOCR."""
-    global _easyocr_reader
+    """Extract text from an image using RapidOCR (Ultra-fast ONNX Runtime CPU)."""
+    global _ocr_engine
     try:
-        import easyocr
-        if _easyocr_reader is None:
-            # gpu=False avoids CUDA crashes on standard machines
-            _easyocr_reader = easyocr.Reader(['en'], gpu=False, verbose=False)
-        result = _easyocr_reader.readtext(img_path, detail=0)
-        return "\n".join(result).strip()
+        from rapidocr_onnxruntime import RapidOCR
+        if _ocr_engine is None:
+            _ocr_engine = RapidOCR()
+        
+        result, _ = _ocr_engine(img_path)
+        if result is None:
+            return ""
+            
+        # result format: [([[bbox...]], text, confidence), ...]
+        return "\n".join([res[1] for res in result]).strip()
     except Exception as e:
         logger.error(f"Error extracting text from IMG {img_path}: {e}")
         return ""
@@ -125,17 +130,29 @@ def process_resume_files(files: list, temp_dir: str = None) -> dict[str, str]:
 
 def extract_all_resume_texts(resumes: dict[str, str]) -> dict[str, str]:
     """
-    Extract text from all resume files.
+    Extract text from all resume files using multi-threading.
     Returns dict: {filename: extracted_text}
     """
+    logger.info("Starting ultra-fast text extraction using Multi-Threading for %d files...", len(resumes))
     resume_texts = {}
-    for filename, file_path in resumes.items():
+    
+    def _extract_single(filename, file_path):
         try:
-            text = extract_text_from_file(file_path)
-            resume_texts[filename] = text
+            return filename, extract_text_from_file(file_path)
         except Exception as e:
             logger.warning("Could not extract text from %s: %s", filename, e)
+            return filename, ""
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
+        futures = {executor.submit(_extract_single, fname, fpath): fname for fname, fpath in resumes.items()}
+        for i, future in enumerate(concurrent.futures.as_completed(futures), 1):
+            fname, text = future.result()
+            if text:
+                resume_texts[fname] = text
+            if i % 50 == 0:
+                logger.info("... extracted %d/%d files ...", i, len(resumes))
     
+    logger.info("Completed text extraction. Valid decoded files: %d", len(resume_texts))
     return resume_texts
 
 

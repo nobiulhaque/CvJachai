@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 # Initialize the LightGBM classifier
 classifier = create_classifier(model_dir="models")
 
-# How many top candidates to send through the slower pretrained model
-_SEMANTIC_RERANK_K = 50
+# How many top candidates to send through the slower pretrained model (if Groq fails)
+_SEMANTIC_RERANK_K = 20
 
 
 class ResumeClassifyAPIView(APIView):
@@ -65,6 +65,7 @@ class ResumeClassifyAPIView(APIView):
         try:
             # Parse validated parameters
             files = request.FILES.getlist('resume_files')
+            logger.info(">>> API CALLED: Received %d files for processing...", len(files))
             job_circular = request.data.get('job_circular', '').strip()
             top_k = int(request.data.get('top_k', 5))
             skills_raw = request.data.get('skills', '')
@@ -126,6 +127,7 @@ class ResumeClassifyAPIView(APIView):
 
             # ---- Stage 5: Stage 1 - Local Model Analysis (Fast) ----
             # Perform keyword, skill, and text-stat analysis for EVERY resume.
+            logger.info("Executing local Keyword & Skill analysis on all %d candidates...", len(resume_texts))
             local_results = []
             for filename, resume_text in resume_texts.items():
                 try:
@@ -150,7 +152,7 @@ class ResumeClassifyAPIView(APIView):
 
             # Sort by local score to pick top candidates for Groq
             local_results.sort(key=lambda x: x['initial_score'], reverse=True)
-            top_for_groq = local_results[:20]  # Judge top 20 resumes with Groq
+            top_for_groq = local_results[:50]  # Judge top 50 resumes with Groq
 
             # ---- Stage 6: Stage 2 - Groq Final Judgement (Smart) ----
             final_scores = {}
@@ -160,7 +162,7 @@ class ResumeClassifyAPIView(APIView):
 
             # Final assembly of results
             results = []
-            for cd in local_results:
+            for index, cd in enumerate(local_results):
                 filename = cd['filename']
                 
                 # If Groq judged it, use Groq's score as the base
@@ -168,7 +170,7 @@ class ResumeClassifyAPIView(APIView):
                 if filename in final_scores:
                     semantic_score = final_scores[filename]
                     engine = "Llama 3 (Final Judge)"
-                else:
+                elif index < _SEMANTIC_RERANK_K:
                     # Fallback for resumes not in the top 20 or if Groq failed
                     try:
                         semantic_score = semantic_reranker.match_job(cd['text'], job_circular)
@@ -177,6 +179,10 @@ class ResumeClassifyAPIView(APIView):
                         logger.warning("Local semantic reranking failed: %s", e)
                         semantic_score = cd['initial_score']
                         engine = "Local Initial Analysis"
+                else:
+                    # Massively speed up processing by skipping PyTorch for low-tier resumes
+                    semantic_score = cd['initial_score']
+                    engine = "Local Keyword Analysis (PyTorch Skipped)"
 
                 # Weighted Final Score: 50% Semantic (Groq/Local) + 30% Keyword + 20% Skills
                 final_score = (semantic_score * 0.50) + (cd['keyword_relevance'] * 0.30) + (cd['skill_bonus'] * 0.20)
