@@ -109,11 +109,7 @@ class SemanticReranker:
         categories: list[str],
     ) -> dict[str, dict[str, float]]:
         """
-        Classify multiple resumes.
-
-        Returns:
-            {filename: {slug: probability}}
-            Resumes that fail are omitted (no crash).
+        Classify multiple resumes into fixed categories.
         """
         results: dict[str, dict[str, float]] = {}
         for filename, text in resume_texts.items():
@@ -121,6 +117,36 @@ class SemanticReranker:
             if scores:
                 results[filename] = scores
         return results
+
+    def match_job(self, resume_text: str, job_description: str) -> float:
+        """
+        Dynamically cross-check if a resume matches a specific job description.
+        This uses Zero-Shot NLI to score the "entailment" of the match
+        without any pre-selected categories.
+        """
+        if not self.available:
+            return 0.0
+
+        # We use the job description as a context and ask if the resume is a fit.
+        # Hypothesis: "This candidate has the skills and experience required for this job."
+        candidate_labels = ["a perfect match for this job", "not a match"]
+        
+        try:
+            # We truncate both to fit within model limits
+            text_to_check = f"Resume: {resume_text[:1000]}\n\nJob: {job_description[:1000]}"
+            result = self._pipeline(
+                text_to_check,
+                candidate_labels=candidate_labels,
+                multi_label=False,
+            )
+            # Return the score for the "match" label
+            for label, score in zip(result["labels"], result["scores"]):
+                if "perfect match" in label:
+                    return float(score)
+            return 0.0
+        except Exception as exc:
+            logger.warning("Dynamic matching failed: %s", exc)
+            return 0.0
 
     # ── Private ────────────────────────────────────────────────────────────────
 

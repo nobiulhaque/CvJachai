@@ -48,6 +48,9 @@ def extract_text_from_file(file_path: str) -> str:
         return extract_text_from_docx(file_path)
     elif ext == '.txt':
         return extract_text_from_txt(file_path)
+    elif ext in ['.png', '.jpg', '.jpeg']:
+        # For now, we return a placeholder. Gemini will handle the actual vision part.
+        return f"[IMAGE_RESUME: {Path(file_path).name}]"
     else:
         raise ValueError(f"Unsupported file format: {ext}")
 
@@ -96,7 +99,7 @@ def process_resume_files(files: list, temp_dir: str = None) -> dict[str, str]:
         if ext == '.zip':
             extracted = extract_resumes_from_zip(temp_path, temp_dir)
             resumes.update(extracted)
-        elif ext in ['.pdf', '.docx', '.txt']:
+        elif ext in ['.pdf', '.docx', '.txt', '.png', '.jpg', '.jpeg']:
             resumes[filename] = temp_path
         else:
             raise ValueError(f"Unsupported file format: {filename}")
@@ -159,100 +162,6 @@ def _meaningful_words(text: str) -> set[str]:
         if len(w) >= 3 and w not in _STOPWORDS
     }
 
-
-def infer_job_category_from_resumes(
-    job_circular: str,
-    predictions: dict[str, dict],
-    resume_texts: dict[str, str],
-) -> str | None:
-    """
-    Dynamically infer which category best matches this job circular.
-
-    Bias-correction: if one category captures >50% of all predictions
-    (i.e. it acts as a catch-all due to an undertrained model), resumes
-    assigned to that dominant category are re-bucketed using their
-    second-best predicted category. This prevents the catch-all from
-    absorbing all vocabulary and always winning inference.
-
-    Scoring: instead of union-vocabulary overlap (biased toward large corpora),
-    uses the average per-resume relevance score within each category group,
-    so 5 highly-relevant resumes can beat 100 loosely-relevant ones.
-    """
-    if not job_circular or not predictions or not resume_texts:
-        return None
-
-    total = len(predictions)
-
-    # --- Step 1: Detect the dominant catch-all category (if any) ---
-    cat_counts: dict[str, int] = {}
-    for pred in predictions.values():
-        c = pred.get("predicted_category", "")
-        if c:
-            cat_counts[c] = cat_counts.get(c, 0) + 1
-
-    dominant_cat: str | None = None
-    for cat, count in cat_counts.items():
-        if count / total > 0.5:          # majority → probable catch-all
-            dominant_cat = cat
-            logger.debug(
-                "Dominant catch-all category detected: '%s' (%d/%d = %.0f%%)",
-                cat, count, total, 100 * count / total,
-            )
-            break
-
-    # --- Step 2: Build category → [resume_texts] corpus ---
-    # Resumes classified as the dominant catch-all are re-bucketed using
-    # their SECOND-best predicted probability instead.
-    job_words = _meaningful_words(job_circular)
-    if not job_words:
-        return None
-
-    category_corpus: dict[str, list[str]] = {}
-    for filename, pred in predictions.items():
-        text = resume_texts.get(filename, "")
-        if not text:
-            continue
-
-        top_cat = pred.get("predicted_category", "")
-        all_preds: dict[str, float] = pred.get("all_predictions", {})
-
-        if top_cat == dominant_cat and len(all_preds) > 1:
-            # Sort by probability descending, skip the dominant category
-            sorted_preds = sorted(all_preds.items(), key=lambda x: x[1], reverse=True)
-            effective_cat = next(
-                (c for c, _ in sorted_preds if c != dominant_cat),
-                top_cat,   # fallback: keep original if nothing else exists
-            )
-        else:
-            effective_cat = top_cat
-
-        category_corpus.setdefault(effective_cat, []).append(text)
-
-    if not category_corpus:
-        return None
-
-    # --- Step 3: Score each category by AVERAGE per-resume relevance ---
-    # Average relevance = (sum of per-resume word-overlaps) / num_resumes
-    # This avoids the large-corpus bias of vocabulary-union overlap.
-    best_cat: str | None = None
-    best_score: float = 0.0
-
-    for cat, texts in category_corpus.items():
-        if not texts:
-            continue
-        total_overlap = sum(
-            len(job_words & _meaningful_words(t)) / len(job_words) for t in texts
-        )
-        avg_score = total_overlap / len(texts)
-
-        logger.debug(
-            "Inference score — '%s': %d resumes, avg_relevance=%.4f",
-            cat, len(texts), avg_score,
-        )
-
-        if avg_score > best_score:
-            best_score = avg_score
-            best_cat = cat
 
     return best_cat if best_score > 0.0 else None
 

@@ -1,28 +1,74 @@
 {
-  "best_model": "LightGBM",
-  "cv_accuracy": 0.7544776119402985,
-  "cv_std": 0.02706512692369683,
+  "best_model": "CatBoost",
+  "cv_accuracy": 0.6125131292747679,
+  "cv_std": 0.009187755429193192,
   "all_cv_results": {
     "Random Forest": {
-      "mean": 0.7455662862159789,
-      "std": 0.03282731012322976
+      "mean": 0.5153196237515129,
+      "std": 0.005676566714081459
     },
     "CatBoost": {
-      "mean": 0.7456540825285339,
-      "std": 0.027686271700935516
+      "mean": 0.6125131292747679,
+      "std": 0.009187755429193192
     },
     "LightGBM": {
-      "mean": 0.7544776119402985,
-      "std": 0.02706512692369683
+      "mean": 0.5814064658059928,
+      "std": 0.0017852498413293448
     }
   },
-  "train_accuracy": 1.0,
+  "train_accuracy": 0.7679305082756192,
   "categories": [
-    "accounts-officers",
-    "administration-officers",
-    "peion",
-    "research-assistants",
-    "technical-roles"
+    "accountant",
+    "agriculture",
+    "apparel",
+    "architect",
+    "architects",
+    "arts",
+    "automobile",
+    "avian",
+    "aviation",
+    "banking",
+    "blockchain",
+    "bpo",
+    "building",
+    "buildingconstruction",
+    "businessanalyst",
+    "civil-engineering",
+    "consult",
+    "consultant",
+    "database",
+    "datascience",
+    "design",
+    "devopsengineer",
+    "digital",
+    "digitalmedia",
+    "dot",
+    "dotnet",
+    "education",
+    "electrical-engineering",
+    "etl",
+    "finance",
+    "food",
+    "foodbeverages",
+    "healthfitness",
+    "human-resources",
+    "it",
+    "java-developer",
+    "legal",
+    "management",
+    "mechanicalengineer",
+    "networksecurityengineer",
+    "nse",
+    "operations",
+    "project-management",
+    "public",
+    "publicrelations",
+    "python-developer",
+    "react",
+    "sales",
+    "sapdeveloper",
+    "sql",
+    "testing"
   ],
   "skill_list": [
     "python",
@@ -744,7 +790,7 @@
     "rapport building"
   ],
   "num_skill_features": 721,
-  "num_tfidf_features": 200,
-  "total_features": 921,
-  "total_samples": 338
+  "num_tfidf_features": 600,
+  "total_features": 1321,
+  "total_samples": 8519
 }

@@ -4,8 +4,8 @@ Serializers for Resume Classifier API.
 
 from rest_framework import serializers
 
-ALLOWED_EXTENSIONS = {'.pdf', '.docx', '.txt', '.zip'}
-MAX_FILES = 500              # Max number of resume files per request
+ALLOWED_EXTENSIONS = {'.pdf', '.docx', '.txt', '.zip', '.png', '.jpg', '.jpeg'}
+MAX_FILES = 1000              # Max number of resume files per request
 MAX_JOB_CIRCULAR_LENGTH = 10_000  # Characters
 MAX_TOP_K = 100
 MAX_MIN_EXPERIENCE = 50      # Years

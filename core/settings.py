@@ -4,7 +4,7 @@ Django settings for Resume Classifier API.
 
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-resume-classifier-dev-key-change-in-production'
 DEBUG = True
@@ -21,8 +21,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
 ]
 
-ROOT_URLCONF = 'urls'
-WSGI_APPLICATION = 'wsgi.application'
+ROOT_URLCONF = 'core.urls'
+WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {}
 
@@ -44,3 +44,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800   # 50 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800   # 50 MB
+DATA_UPLOAD_MAX_NUMBER_FILES = 1000      # Support up to 1000 resumes in one batch

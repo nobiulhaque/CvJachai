@@ -46,8 +46,8 @@ class ResumeClassifier:
     
     def _build_features(self, resume_text: str) -> np.ndarray:
         """
-        Build the full 921-feature vector:
-          - 200 TF-IDF features
+        Build the full 1321-feature vector (as specified in metadata):
+          - 600 TF-IDF features
           - 717 binary skill features
           - 4 text statistic features (char_count, word_count, avg_word_len, unique_word_ratio)
         """
@@ -97,7 +97,7 @@ class ResumeClassifier:
     def get_model_info(self) -> dict:
         """Return information about the loaded model."""
         return {
-            "model_type": "LightGBM Classifier",
+            "model_type": "CatBoost Classifier",
             "best_model": self.model_metadata.get('best_model'),
             "cv_accuracy": round(self.model_metadata.get('cv_accuracy', 0), 4),
             "train_accuracy": round(self.model_metadata.get('train_accuracy', 0), 4),
