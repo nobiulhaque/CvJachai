@@ -163,8 +163,6 @@ def _meaningful_words(text: str) -> set[str]:
     }
 
 
-    return best_cat if best_score > 0.0 else None
-
 
 def calculate_job_relevance(resume_text: str, job_circular: str) -> float:
     """
