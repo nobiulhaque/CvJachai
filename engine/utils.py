@@ -38,6 +38,23 @@ def extract_text_from_txt(txt_path: str) -> str:
         raise Exception(f"Error extracting text from TXT {txt_path}: {e}")
 
 
+_easyocr_reader = None
+
+def extract_text_from_image(img_path: str) -> str:
+    """Extract text from an image using EasyOCR."""
+    global _easyocr_reader
+    try:
+        import easyocr
+        if _easyocr_reader is None:
+            # gpu=False avoids CUDA crashes on standard machines
+            _easyocr_reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+        result = _easyocr_reader.readtext(img_path, detail=0)
+        return "\n".join(result).strip()
+    except Exception as e:
+        logger.error(f"Error extracting text from IMG {img_path}: {e}")
+        return ""
+
+
 def extract_text_from_file(file_path: str) -> str:
     """Route to appropriate extraction function based on file extension."""
     ext = Path(file_path).suffix.lower()
@@ -49,8 +66,7 @@ def extract_text_from_file(file_path: str) -> str:
     elif ext == '.txt':
         return extract_text_from_txt(file_path)
     elif ext in ['.png', '.jpg', '.jpeg']:
-        # For now, we return a placeholder. Gemini will handle the actual vision part.
-        return f"[IMAGE_RESUME: {Path(file_path).name}]"
+        return extract_text_from_image(file_path)
     else:
         raise ValueError(f"Unsupported file format: {ext}")
 

@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 
 from engine.model import create_classifier
 from engine.pretrained_classifier import semantic_reranker
-from engine.gemini_engine import gemini_matcher
+from engine.groq_engine import groq_matcher
 from api.serializers import ResumeUploadSerializer
 from engine.utils import (
     process_resume_files,
@@ -148,28 +148,28 @@ class ResumeClassifyAPIView(APIView):
                 except Exception as e:
                     logger.warning("Local analysis failed for '%s': %s", filename, e)
 
-            # Sort by local score to pick top candidates for Gemini
+            # Sort by local score to pick top candidates for Groq
             local_results.sort(key=lambda x: x['initial_score'], reverse=True)
-            top_for_gemini = local_results[:20]  # Judge top 20 resumes with Gemini
+            top_for_groq = local_results[:20]  # Judge top 20 resumes with Groq
 
-            # ---- Stage 6: Stage 2 - Gemini Final Judgement (Smart) ----
+            # ---- Stage 6: Stage 2 - Groq Final Judgement (Smart) ----
             final_scores = {}
-            if gemini_matcher.available and top_for_gemini:
-                logger.info("Stage 2: Sending top %d candidates to Gemini judge...", len(top_for_gemini))
-                final_scores = gemini_matcher.match_batch(job_circular, top_for_gemini)
+            if groq_matcher.available and top_for_groq:
+                logger.info("Stage 2: Sending top %d candidates to Groq judge...", len(top_for_groq))
+                final_scores = groq_matcher.match_batch(job_circular, top_for_groq)
 
             # Final assembly of results
             results = []
             for cd in local_results:
                 filename = cd['filename']
                 
-                # If Gemini judged it, use Gemini's score as the base (60%)
+                # If Groq judged it, use Groq's score as the base
                 # otherwise fallback to local semantic score or initial score
                 if filename in final_scores:
                     semantic_score = final_scores[filename]
-                    engine = "Gemini 1.5 Flash (Final Judge)"
+                    engine = "Llama 3 (Final Judge)"
                 else:
-                    # Fallback for resumes not in the top 20 or if Gemini failed
+                    # Fallback for resumes not in the top 20 or if Groq failed
                     try:
                         semantic_score = semantic_reranker.match_job(cd['text'], job_circular)
                         engine = "Local NLI Transformer"
@@ -178,7 +178,7 @@ class ResumeClassifyAPIView(APIView):
                         semantic_score = cd['initial_score']
                         engine = "Local Initial Analysis"
 
-                # Weighted Final Score: 50% Semantic (Gemini/Local) + 30% Keyword + 20% Skills
+                # Weighted Final Score: 50% Semantic (Groq/Local) + 30% Keyword + 20% Skills
                 final_score = (semantic_score * 0.50) + (cd['keyword_relevance'] * 0.30) + (cd['skill_bonus'] * 0.20)
 
                 results.append({
@@ -217,7 +217,7 @@ class ResumeClassifyAPIView(APIView):
                 "job_circular_preview": (
                     job_circular[:200] + "..." if len(job_circular) > 200 else job_circular
                 ),
-                "analysis_engine": "Gemini Hybrid" if gemini_matcher.available else "Local Hybrid",
+                "analysis_engine": "Groq Hybrid" if groq_matcher.available else "Local Hybrid",
                 "skills_searched": skills_list or None,
                 "min_experience": min_experience if min_experience > 0 else None,
                 "total_resumes_provided": len(resumes),
