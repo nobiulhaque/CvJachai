@@ -4,6 +4,8 @@ URL configuration for Resume Classifier API.
 
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from api import views as api_views
 
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -18,4 +20,4 @@ urlpatterns = [
     path('api/optimize', api_views.ResumeOptimizeAPIView.as_view(), name='resume_optimize'),
     path('api/', api_views.APIInfoAPIView.as_view(), name='api_info'),
     path('', api_views.APIInfoAPIView.as_view(), name='root'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

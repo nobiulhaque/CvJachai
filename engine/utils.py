@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import tempfile
 import zipfile
 import concurrent.futures
@@ -208,3 +209,24 @@ def calculate_job_relevance(resume_text: str, job_circular: str) -> float:
         return 0.0
     overlap = job_words & resume_words
     return len(overlap) / len(job_words)
+
+
+def extract_contact_info(text: str) -> dict:
+    """Extract basic contact info like name, email, and phone using regex."""
+    # Email regex
+    emails = re.findall(r'[\w\.-]+@[\w\.-]+\.\w+', text)
+    email = emails[0] if emails else "N/A"
+    
+    # Phone regex (basic)
+    phones = re.findall(r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}', text)
+    phone = phones[0] if phones else "N/A"
+    
+    # Name extraction (Heuristic: First non-empty line usually contains the name)
+    lines = [l.strip() for l in text.split('\n') if l.strip()]
+    name = lines[0] if lines else "Unknown"
+    
+    return {
+        "name": name,
+        "email": email,
+        "phone": phone
+    }

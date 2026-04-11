@@ -108,3 +108,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800   # 50 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800   # 50 MB
 DATA_UPLOAD_MAX_NUMBER_FILES = 1000      # Support up to 1000 resumes in one batch
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Ensure media root exists
+if not os.path.exists(MEDIA_ROOT):
+    os.makedirs(MEDIA_ROOT)
