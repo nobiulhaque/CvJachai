@@ -29,4 +29,4 @@ ENV HOME=/home/user \
 EXPOSE 8000
 
 # Run migrations, collect static, then start the server
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 300 core.wsgi:application"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:$PORT --workers 1 --worker-class gthread --threads 4 --timeout 600 --worker-tmp-dir /dev/shm core.wsgi:application"]
