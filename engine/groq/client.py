@@ -14,7 +14,7 @@ class GroqClient:
         self.client = None
         self.ranker_model = "llama-3.1-8b-instant"
         self.optimizer_model = "llama-3.3-70b-versatile"
-        self.vision_model = "llama-3.2-11b-vision-instant" # Updated Fallback
+        self.vision_model = "meta-llama/llama-4-scout-17b-16e-instruct" # Official Groq vision replacement
         self._available = False
 
         if self.api_key:
@@ -30,18 +30,20 @@ class GroqClient:
         try:
             models = [m.id for m in self.client.models.list().data]
             
-            # Find Best Ranker
-            eight_b = sorted([m for m in models if "8b" in m.lower() and "vision" not in m.lower()], reverse=True)
+            # Find Best Ranker (8B text-only)
+            eight_b = sorted([m for m in models if "8b" in m.lower() and "vision" not in m.lower() and "scout" not in m.lower()], reverse=True)
             if eight_b: self.ranker_model = eight_b[0]
             
-            # Find Best Optimizer
+            # Find Best Optimizer (70B text-only)
             seventy_b = sorted([m for m in models if "70b" in m.lower() and "vision" not in m.lower()], reverse=True)
             if seventy_b: self.optimizer_model = seventy_b[0]
 
-            # Find Best Vision
-            vision_models = sorted([m for m in models if "vision" in m.lower()], reverse=True)
-            if vision_models:
-                self.vision_model = vision_models[0]
+            # Find Best Vision (prefer llama-4-scout as it's official vision replacement)
+            scout_models = [m for m in models if "scout" in m.lower()]
+            vision_models = [m for m in models if "vision" in m.lower()]
+            best_vision = scout_models or vision_models
+            if best_vision:
+                self.vision_model = sorted(best_vision, reverse=True)[0]
                 logger.info(f"Using Groq Vision Model: {self.vision_model}")
                 
         except Exception as e:
