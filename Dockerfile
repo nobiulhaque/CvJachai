@@ -26,7 +26,7 @@ USER user
 ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH
 
-EXPOSE 7860
+EXPOSE 8000
 
-# Run migrations then start the server
-CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:7860 --timeout 120 core.wsgi:application"]
+# Run migrations, collect static, then start the server
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:$PORT --timeout 120 core.wsgi:application"]
