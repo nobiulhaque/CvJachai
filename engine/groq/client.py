@@ -14,7 +14,7 @@ class GroqClient:
         self.client = None
         self.ranker_model = "llama-3.1-8b-instant"
         self.optimizer_model = "llama-3.3-70b-versatile"
-        self.vision_model = "llama-3.2-11b-vision-preview"
+        self.vision_model = "llama-3.2-11b-vision-preview" # Fallback
         self._available = False
 
         if self.api_key:
@@ -29,11 +29,21 @@ class GroqClient:
         """Find best available models on Groq."""
         try:
             models = [m.id for m in self.client.models.list().data]
-            eight_b = sorted([m for m in models if "8b" in m.lower()], reverse=True)
+            
+            # Find Best Ranker
+            eight_b = sorted([m for m in models if "8b" in m.lower() and "vision" not in m.lower()], reverse=True)
             if eight_b: self.ranker_model = eight_b[0]
             
-            seventy_b = sorted([m for m in models if "70b" in m.lower()], reverse=True)
+            # Find Best Optimizer
+            seventy_b = sorted([m for m in models if "70b" in m.lower() and "vision" not in m.lower()], reverse=True)
             if seventy_b: self.optimizer_model = seventy_b[0]
+
+            # Find Best Vision
+            vision_models = sorted([m for m in models if "vision" in m.lower()], reverse=True)
+            if vision_models:
+                self.vision_model = vision_models[0]
+                logger.info(f"Using Groq Vision Model: {self.vision_model}")
+                
         except Exception as e:
             logger.warning(f"Groq Auto-Discovery failed, using defaults: {e}")
 
