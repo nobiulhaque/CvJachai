@@ -54,7 +54,11 @@ def extract_text_from_image(img_path: str) -> str:
         prompt = "Transcript the text in this resume image exactly. Return ONLY the text."
         text = groq_base.call_vision(prompt, encoded_string)
         
-        return text.strip() if text else ""
+        if not text:
+            logger.error("Groq Vision returned empty text for %s. Check API key and model availability.", img_path)
+            return ""
+
+        return text.strip()
     except Exception as e:
         logger.error(f"Error extracting text from IMG {img_path} via Groq: {e}")
         return ""

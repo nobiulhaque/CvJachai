@@ -54,9 +54,10 @@ class ResumeOptimizeAPIView(APIView):
 
             # 2. Extract Text
             resume_text = extract_text_from_file(temp_path)
-            if not resume_text or len(resume_text.strip()) < 50:
+            if not resume_text or len(resume_text.strip()) < 10:
+                logger.warning("Extraction failed or text too short (<10 chars) for: %s", resume_file.name)
                 return Response(
-                    {"error": "Could not extract sufficient text from the resume file."},
+                    {"error": "Could not extract sufficient text from the resume file. Ensure it is not empty."},
                     status=HTTP_400_BAD_REQUEST
                 )
 
