@@ -10,11 +10,9 @@ class GroqClient:
     """Base client for Groq API with auto-model discovery."""
     
     def __init__(self):
-        self.api_key = os.getenv("API_KEY")
-        self.client = None
         self.ranker_model = "llama-3.1-8b-instant"
         self.optimizer_model = "llama-3.3-70b-versatile"
-        self.vision_model = "llama-3.2-11b-vision-preview" # Fallback
+        self.vision_model = "llama-3.2-11b-vision-instant" # Updated Fallback
         self._available = False
 
         if self.api_key:
