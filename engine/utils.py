@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import base64
 import tempfile
 import zipfile
 import concurrent.futures
@@ -40,24 +41,22 @@ def extract_text_from_txt(txt_path: str) -> str:
         raise Exception(f"Error extracting text from TXT {txt_path}: {e}")
 
 
-_ocr_engine = None
-
 def extract_text_from_image(img_path: str) -> str:
-    """Extract text from an image using RapidOCR (Ultra-fast ONNX Runtime CPU)."""
-    global _ocr_engine
+    """Extract text from an image using Groq Vision (Ultra-fast Cloud AI)."""
     try:
-        from rapidocr_onnxruntime import RapidOCR
-        if _ocr_engine is None:
-            _ocr_engine = RapidOCR()
+        from engine.groq import groq_base
         
-        result, _ = _ocr_engine(img_path)
-        if result is None:
-            return ""
-            
-        # result format: [([[bbox...]], text, confidence), ...]
-        return "\n".join([res[1] for res in result]).strip()
+        # Read and encode image to base64
+        with open(img_path, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
+        
+        # Call Groq Vision
+        prompt = "Transcript the text in this resume image exactly. Return ONLY the text."
+        text = groq_base.call_vision(prompt, encoded_string)
+        
+        return text.strip() if text else ""
     except Exception as e:
-        logger.error(f"Error extracting text from IMG {img_path}: {e}")
+        logger.error(f"Error extracting text from IMG {img_path} via Groq: {e}")
         return ""
 
 

@@ -14,6 +14,7 @@ class GroqClient:
         self.client = None
         self.ranker_model = "llama-3.1-8b-instant"
         self.optimizer_model = "llama-3.3-70b-versatile"
+        self.vision_model = "llama-3.2-11b-vision-preview"
         self._available = False
 
         if self.api_key:
@@ -60,6 +61,34 @@ class GroqClient:
             return response.choices[0].message.content
         except Exception as e:
             logger.error(f"Groq API Error: {e}")
+            return None
+
+    def call_vision(self, user_prompt, base64_image, model=None):
+        """Call Groq Vision model with an image."""
+        if not self.available: return None
+        try:
+            target_model = model or self.vision_model
+            response = self.client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": user_prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                model=target_model,
+                temperature=0.1
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.error(f"Groq Vision Error: {e}")
             return None
 
 # Singleton base client
