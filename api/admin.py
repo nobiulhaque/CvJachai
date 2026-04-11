@@ -18,6 +18,11 @@ admin.site.unregister(User)
 class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'delete_button')
 
+    class Media:
+        css = {
+            'all': ('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',)
+        }
+
     def delete_button(self, obj):
         # Only show for non-superusers or allow for all if owner desires
         # Here we point to the confirmation page for deleting the user
