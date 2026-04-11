@@ -24,9 +24,15 @@ class ResumeClassifier:
         self.categories: list[str] = []
         self.skill_list: list[str] = []
         self.model_metadata: dict = {}
+        self.ready = False
         
-        self._load_model()
-        self._load_metadata()
+        try:
+            self._load_model()
+            self._load_metadata()
+            self.ready = True
+        except (FileNotFoundError, Exception) as e:
+            logger.warning(f"Model artifacts not found or could not be loaded: {e}. "
+                          "The classifier will operate in fallback mode (LLM only).")
     
     def _load_model(self):
         """Load the trained LightGBM model and preprocessing objects."""
@@ -72,6 +78,15 @@ class ResumeClassifier:
     
     def predict(self, resume_text: str) -> dict:
         """Predict job category for a single resume."""
+        if not self.ready:
+            return {
+                "predicted_category": "Unknown (Model missing)",
+                "confidence": 0.0,
+                "all_predictions": {},
+                "status": "error",
+                "message": "Local ML model not found. Using fallback analysis."
+            }
+        
         features = self._build_features(resume_text)
         scaled = self.scaler.transform(features)
         
