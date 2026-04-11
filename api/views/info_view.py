@@ -14,25 +14,23 @@ class APIInfoAPIView(APIView):
         
         response_data = {
             "name": "CvJachai Resume Intelligence Engine",
-            "version": "4.0.0 (Full Stack Release)",
-            "status": "Operational (Secure Deployment Ready)",
+            "version": "5.0.0 (Cloud-Native AI Release)",
+            "status": "Operational",
             "authentication": "JWT Bearer Token Required",
-            "architecture": "Hybrid AI Pipeline (LightGBM + Groq LLM + Local NLI Fallback)",
+            "architecture": "Cloud-Native AI Pipeline (Groq GPT-OSS 120B + Llama 4 Scout Vision)",
             "active_models": {
-                "mass_classifier": "LightGBM 1.2.8",
-                "semantic_judge": groq_base.ranker_model + " (Groq)",
-                "fallback_judge": "Local NLI Transformer",
-                "optimizer": groq_base.optimizer_model + " (Groq)"
+                "text_classifier": groq_base.ranker_model + " (Groq)",
+                "optimizer": groq_base.optimizer_model + " (Groq)",
+                "vision_ocr": groq_base.vision_model + " (Groq Vision)",
             },
             "endpoints": {
                 "POST /api/auth/signup": "Create account",
                 "POST /api/auth/signin": "Login & obtain JWT tokens",
                 "GET/PATCH /api/auth/profile": "Professional profile management",
                 "POST /api/token/refresh/": "Fetch new access tokens",
-                "POST /api/classify": "Massive resume ranking (Hybrid LightGBM/LLM)",
+                "POST /api/classify": "Massive resume ranking (Groq AI)",
                 "POST /api/optimize": "AI-powered ATS Resume Rewrite",
-                "ADMIN /admin/": "Django Admin Control Center",
-                "DASHBOARD /admin/index.html": "Premium Admin Frontend UI"
+                "GET /dashboard/": "Premium Admin Intelligence Dashboard"
             },
             "security": {
                 "protocol": "JWT + DRF Throttling",
@@ -43,11 +41,11 @@ class APIInfoAPIView(APIView):
             "supported_formats": ["PDF", "DOCX", "TXT", "ZIP", "PNG", "JPG", "JPEG"],
             "features": [
                 "Massive Scale: Processes 1000+ resumes per batch",
-                "Hybrid Scoring: Combines local ML speed with LLM precision",
-                "Resilient Architecture: Automatic local NLI fallback if API is down",
-                "Advanced OCR: Multi-threaded text extraction from images and docs",
-                "Admin Suite: Premium glassmorphism dashboard and enhanced Django admin",
-                "SEO Optimized: Semantic HTML structure and performance tuned"
+                "Cloud-Native: Powered entirely by Groq's ultra-fast AI inference",
+                "Vision AI: Llama 4 Scout reads resume images directly (no local OCR)",
+                "Auto Model Discovery: Always uses the best available Groq model",
+                "Premium Dashboard: Glassmorphism UI at /dashboard/",
+                "Zero Heavy Dependencies: Lightweight deployment on free-tier cloud",
             ]
         }
         
