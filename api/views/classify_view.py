@@ -1,6 +1,7 @@
 import logging
 import os
 import uuid
+from urllib.parse import quote
 from django.conf import settings
 
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -137,9 +138,10 @@ class ResumeClassifyAPIView(APIView):
 
                 final_score = (semantic_score * 0.50) + (cd['keyword_relevance'] * 0.30) + (cd['skill_bonus'] * 0.20)
                 
-                # Construct Download Link
+                # Construct Download Link (URL-encode to handle spaces in folder names)
                 relative_path = os.path.relpath(cd['file_path'], settings.MEDIA_ROOT).replace('\\', '/')
-                resume_url = f"{protocol}://{host}{settings.MEDIA_URL}{relative_path}"
+                encoded_path = quote(relative_path)
+                resume_url = f"{protocol}://{host}{settings.MEDIA_URL}{encoded_path}"
 
                 results.append({
                     "candidate_name": cd['contact_info']['name'],
