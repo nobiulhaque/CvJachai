@@ -12,9 +12,9 @@ class GroqClient:
     def __init__(self):
         self.api_key = os.getenv("API_KEY")
         self.client = None
-        self.ranker_model = "llama-3.1-8b-instant"
-        self.optimizer_model = "llama-3.3-70b-versatile"
-        self.vision_model = "meta-llama/llama-4-scout-17b-16e-instruct" # Official Groq vision replacement
+        self.ranker_model = "openai/gpt-oss-120b"           # Best on Groq
+        self.optimizer_model = "openai/gpt-oss-120b"         # Best on Groq
+        self.vision_model = "meta-llama/llama-4-scout-17b-16e-instruct"  # Official vision model
         self._available = False
 
         if self.api_key:
@@ -26,26 +26,34 @@ class GroqClient:
                 logger.error(f"Groq Client Init Error: {e}")
 
     def _discover_models(self):
-        """Find best available models on Groq."""
+        """Find best available models on Groq - always prefer newest."""
         try:
             models = [m.id for m in self.client.models.list().data]
-            
-            # Find Best Ranker (8B text-only)
-            eight_b = sorted([m for m in models if "8b" in m.lower() and "vision" not in m.lower() and "scout" not in m.lower()], reverse=True)
-            if eight_b: self.ranker_model = eight_b[0]
-            
-            # Find Best Optimizer (70B text-only)
-            seventy_b = sorted([m for m in models if "70b" in m.lower() and "vision" not in m.lower()], reverse=True)
-            if seventy_b: self.optimizer_model = seventy_b[0]
 
-            # Find Best Vision (prefer llama-4-scout as it's official vision replacement)
+            # Priority: gpt-oss-120b > llama-4 > llama-3.3-70b
+            def best_text_model(candidates):
+                for preferred in ["gpt-oss-120b", "llama-4", "70b"]:
+                    matches = [m for m in candidates if preferred in m.lower()]
+                    if matches:
+                        return sorted(matches, reverse=True)[0]
+                return None
+
+            text_models = [m for m in models if "scout" not in m.lower() and "vision" not in m.lower() and "guard" not in m.lower() and "whisper" not in m.lower()]
+            
+            best = best_text_model(text_models)
+            if best:
+                self.ranker_model = best
+                self.optimizer_model = best
+                logger.info(f"Using Groq Text Model: {best}")
+
+            # Vision: prefer llama-4-scout
             scout_models = [m for m in models if "scout" in m.lower()]
             vision_models = [m for m in models if "vision" in m.lower()]
             best_vision = scout_models or vision_models
             if best_vision:
                 self.vision_model = sorted(best_vision, reverse=True)[0]
                 logger.info(f"Using Groq Vision Model: {self.vision_model}")
-                
+
         except Exception as e:
             logger.warning(f"Groq Auto-Discovery failed, using defaults: {e}")
 
