@@ -12,6 +12,7 @@ Pipeline:
 
 import logging
 import re
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,9 @@ class SemanticReranker:
     @property
     def available(self) -> bool:
         """True if the pretrained model is loaded and ready."""
+        if os.getenv('RENDER') == 'true' and os.getenv('PLAN') == 'free':
+            return False  # Skip local heavy model on Render Free Tier to avoid OOM
+        
         if self._available is None:
             try:
                 self._load()
