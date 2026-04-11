@@ -127,13 +127,26 @@ class ResumeClassifyAPIView(APIView):
                 filename = cd['filename']
                 
                 if filename in final_scores:
-                    semantic_score = final_scores[filename]
-                    engine = "Groq Llama 3"
+                    groq_data = final_scores[filename]
+                    # Handle both dict and raw float from Groq ranker
+                    if isinstance(groq_data, dict):
+                        semantic_score = float(groq_data.get('score', 0.5))
+                        verdict = groq_data.get('verdict', '')
+                        strengths = groq_data.get('strengths', [])
+                    else:
+                        semantic_score = float(groq_data)
+                        verdict = ''
+                        strengths = []
+                    engine = groq_base.ranker_model
                 elif index < _SEMANTIC_RERANK_K:
                     semantic_score = semantic_reranker.match_job(cd['text'], job_circular)
+                    verdict = ''
+                    strengths = []
                     engine = "Local NLI"
                 else:
                     semantic_score = cd['initial_score']
+                    verdict = ''
+                    strengths = []
                     engine = "Keyword Analysis"
 
                 final_score = (semantic_score * 0.50) + (cd['keyword_relevance'] * 0.30) + (cd['skill_bonus'] * 0.20)
@@ -148,17 +161,25 @@ class ResumeClassifyAPIView(APIView):
                     "email": cd['contact_info']['email'],
                     "phone": cd['contact_info']['phone'],
                     "resume_url": resume_url,
-                    "final_score": round(final_score, 4),
+                    "match_score": round(final_score, 4),
+                    "match_percentage": f"{round(final_score * 100, 1)}%",
+                    "verdict": verdict,
+                    "key_strengths": strengths,
                     "analysis_engine": engine,
                 })
 
             # Threshold and Top-K
-            matched = [r for r in results if r['final_score'] >= min_score]
-            matched.sort(key=lambda x: x['final_score'], reverse=True)
+            matched = [r for r in results if r['match_score'] >= min_score]
+            matched.sort(key=lambda x: x['match_score'], reverse=True)
             results = matched[:top_k]
 
+            # Add rank position
+            for i, r in enumerate(results, 1):
+                r['rank'] = i
+
             return Response({
-                "total_resumes": len(resumes),
+                "batch_id": batch_id,
+                "total_resumes_processed": len(resumes),
                 "top_candidates": results,
             }, status=HTTP_200_OK)
 
