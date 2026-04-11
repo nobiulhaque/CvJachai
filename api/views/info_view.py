@@ -14,41 +14,40 @@ class APIInfoAPIView(APIView):
         
         response_data = {
             "name": "CvJachai Resume Intelligence Engine",
-            "version": "3.2.0",
-            "status": "Operational (Production Secure)",
+            "version": "4.0.0 (Full Stack Release)",
+            "status": "Operational (Secure Deployment Ready)",
             "authentication": "JWT Bearer Token Required",
-            "architecture": "Modular Hybrid AI (Groq Cloud + Local OCR)",
+            "architecture": "Hybrid AI Pipeline (LightGBM + Groq LLM + Local NLI Fallback)",
             "active_models": {
-                "ranker": groq_base.ranker_model,
-                "optimizer": groq_base.optimizer_model
+                "mass_classifier": "LightGBM 1.2.8",
+                "semantic_judge": groq_base.ranker_model + " (Groq)",
+                "fallback_judge": "Local NLI Transformer",
+                "optimizer": groq_base.optimizer_model + " (Groq)"
             },
             "endpoints": {
-                "POST /api/auth/signup": "Create account (Email, Password 8+ chars)",
-                "POST /api/auth/signin": "Login & get Profile + Tokens",
-                "GET/PATCH /api/auth/profile": "View/Update professional details",
-                "POST /api/token/refresh/": "Refresh expired access token",
-                "POST /api/classify": "Rank massive resume batches (400+)",
-                "POST /api/optimize": "ATS Resume Rewrite powered by Llama 70B",
-                "GET /api/": "View this documentation"
+                "POST /api/auth/signup": "Create account",
+                "POST /api/auth/signin": "Login & obtain JWT tokens",
+                "GET/PATCH /api/auth/profile": "Professional profile management",
+                "POST /api/token/refresh/": "Fetch new access tokens",
+                "POST /api/classify": "Massive resume ranking (Hybrid LightGBM/LLM)",
+                "POST /api/optimize": "AI-powered ATS Resume Rewrite",
+                "ADMIN /admin/": "Django Admin Control Center",
+                "DASHBOARD /admin/index.html": "Premium Admin Frontend UI"
             },
             "security": {
-                "secret_key": "Environment-secured (via .env)",
-                "debug_mode": "Environment-controlled",
-                "password_policy": "Min 8 chars, no common passwords, Django validators",
-                "duplicate_email": "Blocked at registration",
-                "rate_limit_anonymous": "20 requests/hour",
-                "rate_limit_authenticated": "100 requests/hour"
+                "protocol": "JWT + DRF Throttling",
+                "environment": "Fully secured via environment variables",
+                "password_policy": "Strict (8+ chars, complex validation)",
+                "rate_limit": "20/hr (Anon), 100/hr (User)"
             },
             "supported_formats": ["PDF", "DOCX", "TXT", "ZIP", "PNG", "JPG", "JPEG"],
             "features": [
-                "Deterministic AI Ranking (Temp 0.0)",
-                "Bulk 1000+ Resume Batch Support",
-                "Multi-threaded OCR Extraction",
-                "Auto-Model Discovery (Always latest Llama)",
-                "Professional ATS Resume Optimizer",
-                "Email-based JWT Authentication",
-                "User Profile Management",
-                "DRF Rate Limiting & Throttling"
+                "Massive Scale: Processes 1000+ resumes per batch",
+                "Hybrid Scoring: Combines local ML speed with LLM precision",
+                "Resilient Architecture: Automatic local NLI fallback if API is down",
+                "Advanced OCR: Multi-threaded text extraction from images and docs",
+                "Admin Suite: Premium glassmorphism dashboard and enhanced Django admin",
+                "SEO Optimized: Semantic HTML structure and performance tuned"
             ]
         }
         
