@@ -24,7 +24,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/signup', api_views.RegisterView.as_view(), name='auth_signup'),
     path('api/auth/signin', api_views.LoginView.as_view(), name='auth_signin'),
-    path('api/auth/password-reset', api_views.ForgotPasswordView.as_view(), name='password_reset'),
+    path('api/auth/otp/request', api_views.ForgotPasswordView.as_view(), name='otp_request'),
     path('api/auth/reset-password', api_views.ResetPasswordView.as_view(), name='reset_password'),
     path('api/auth/profile', api_views.ProfileDetailAPIView.as_view(), name='auth_profile'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
