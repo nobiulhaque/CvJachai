@@ -110,6 +110,10 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800   # 50 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800   # 50 MB
 DATA_UPLOAD_MAX_NUMBER_FILES = 1000      # Support up to 1000 resumes in one batch
 
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'CvJachai <noreply@cvjachai.com>'
+
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
