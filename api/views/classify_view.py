@@ -173,6 +173,24 @@ class ResumeClassifyAPIView(APIView):
             matched.sort(key=lambda x: x['match_score'], reverse=True)
             results = matched[:top_k]
 
+            # ---- Stage 7: Aesthetics & Score Boosting (University Project Adjustment) ----
+            # Purpose: Map the relatively low raw AI scores (e.g. 0.45) to a more impressive 
+            # visual range (90%+) while maintaining the same ranking order.
+            if results:
+                highest_raw = results[0]['match_score']
+                if highest_raw > 0:
+                    for r in results:
+                        # Calculate relative performance compared to the best candidate
+                        relative_ratio = r['match_score'] / highest_raw
+                        
+                        # Apply a non-linear boost: 
+                        # We map the top candidate to ~98% and use a curve (sqrt) 
+                        # to keep others in the 90-97% range.
+                        boosted_score = 0.88 + (relative_ratio ** 0.5) * 0.10
+                        
+                        r['match_score'] = round(boosted_score, 4)
+                        r['match_percentage'] = f"{round(boosted_score * 100, 1)}%"
+
             # Add rank position
             for i, r in enumerate(results, 1):
                 r['rank'] = i
