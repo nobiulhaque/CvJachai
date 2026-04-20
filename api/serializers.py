@@ -120,3 +120,19 @@ class ResumeUploadSerializer(serializers.Serializer):
             )
 
         return value
+
+class JobSerializer(serializers.ModelSerializer):
+    created_by_email = serializers.EmailField(source='created_by.email', read_only=True)
+
+    class Meta:
+        from .models import Job
+        model = Job
+        fields = '__all__'
+        read_only_fields = ('created_by', 'created_at', 'is_active')
+
+class ApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        from .models import Application
+        model = Application
+        fields = ('job', 'candidate_name', 'candidate_email', 'resume_file', 'applied_at', 'match_score', 'analysis_data')
+        read_only_fields = ('applied_at', 'match_score', 'analysis_data')

@@ -30,6 +30,14 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/classify', api_views.ResumeClassifyAPIView.as_view(), name='resume_classify'),
     path('api/optimize', api_views.ResumeOptimizeAPIView.as_view(), name='resume_optimize'),
+    
+    # --- Job Portal Endpoints ---
+    path('api/jobs/', api_views.JobCreateListView.as_view(), name='job_list_create'),
+    path('api/jobs/apply/', api_views.ApplyJobView.as_view(), name='job_apply'),
+    path('api/jobs/<int:job_id>/applications/', api_views.JobApplicationsListView.as_view(), name='job_applications'),
+    path('api/jobs/<int:job_id>/analyze/', api_views.AnalyzeJobApplicantsView.as_view(), name='job_analyze'),
+    # ----------------------------
+
     path('dashboard/', TemplateView.as_view(template_name='index.html'), name='dashboard'),
     path('api/', api_views.APIInfoAPIView.as_view(), name='api_info'),
     path('', api_views.APIInfoAPIView.as_view(), name='root'),
