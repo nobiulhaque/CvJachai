@@ -123,11 +123,17 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'CvJachai <noreply@cvjachai.com>')
 
 # Media files — powered by Cloudinary (survives Render redeploys)
+import cloudinary
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
     'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
 }
+
+# Ensure Cloudinary can use CLOUDINARY_URL if provided
+if os.getenv('CLOUDINARY_URL'):
+    import cloudinary
+    cloudinary.config(cloudinary_url=os.getenv('CLOUDINARY_URL'))
 
 STORAGES = {
     "default": {
