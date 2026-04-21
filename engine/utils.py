@@ -7,7 +7,7 @@ import zipfile
 import concurrent.futures
 from pathlib import Path
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from docx import Document
 
 logger = logging.getLogger(__name__)
@@ -78,6 +78,21 @@ def extract_text_from_file(file_path: str) -> str:
         return extract_text_from_image(file_path)
     else:
         raise ValueError(f"Unsupported file format: {ext}")
+
+
+def extract_text_from_bytes(content: bytes, filename: str) -> str:
+    """
+    Extract text from raw bytes (e.g. downloaded from Cloudinary URL).
+    Uses a temp file internally so existing extractors can be reused.
+    """
+    ext = Path(filename).suffix.lower()
+    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+    try:
+        return extract_text_from_file(tmp_path)
+    finally:
+        os.unlink(tmp_path)
 
 
 def extract_resumes_from_zip(zip_path: str, temp_dir: str) -> dict[str, str]:

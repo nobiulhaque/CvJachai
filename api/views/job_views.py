@@ -89,8 +89,13 @@ class AnalyzeJobApplicantsView(APIView):
         for app in applications:
             if app.resume_file:
                 try:
-                    from engine.utils import extract_text_from_file
-                    text = extract_text_from_file(app.resume_file.path)
+                    import requests as http_req
+                    from engine.utils import extract_text_from_bytes
+                    file_url = app.resume_file.url
+                    file_name = app.resume_file.name
+                    response = http_req.get(file_url, timeout=15)
+                    response.raise_for_status()
+                    text = extract_text_from_bytes(response.content, file_name)
                     resume_texts[app.id] = text
                     apps_map[app.id] = app
                 except Exception as e:
