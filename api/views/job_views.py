@@ -57,24 +57,37 @@ class JobApplicationsListView(generics.ListAPIView):
 
 class AnalyzeJobApplicantsView(APIView):
     """
-    Screen and analyze all applicants for a specific job (Authenticated HR).
+    Screen and analyze applicants for a specific job.
+    Job details (description, skills, experience) are pulled automatically from the job.
+    Only pass `top_k` to control how many top candidates you want returned.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, job_id):
         job = get_object_or_404(Job, id=job_id, created_by=self.request.user)
         applications = Application.objects.filter(job=job)
-        
+
         if not applications.exists():
             return Response({"error": "No applicants to analyze."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. Prepare data for analysis
-        # Map resume files to local paths
+        # --- Read top_k from request body (default: return all) ---
+        try:
+            top_k = int(request.data.get('top_k', len(applications)))
+            if top_k < 1:
+                top_k = 1
+        except (ValueError, TypeError):
+            top_k = len(applications)
+
+        # --- Pull job details automatically from the Job model ---
+        job_description = job.description
+        skills_list = [s.strip() for s in job.skills_required.split(',') if s.strip()]
+        min_experience = job.min_experience
+
+        # 1. Extract text from all resumes
         resume_texts = {}
         apps_map = {}
         for app in applications:
             if app.resume_file:
-                # In standard Django, .path gives the absolute path
                 try:
                     from engine.utils import extract_text_from_file
                     text = extract_text_from_file(app.resume_file.path)
@@ -86,15 +99,13 @@ class AnalyzeJobApplicantsView(APIView):
         if not resume_texts:
             return Response({"error": "Could not extract text from any applicant resumes."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 2. Run Local Analysis
-        skills_list = [s.strip() for s in job.skills_required.split(',') if s.strip()]
-        
+        # 2. Run local keyword + skill analysis
         results = []
         for app_id, text in resume_texts.items():
-            relevance = calculate_job_relevance(text, job.description)
-            bonus = calculate_skill_bonus(text, skills_list, job.min_experience)
+            relevance = calculate_job_relevance(text, job_description)
+            bonus = calculate_skill_bonus(text, skills_list, min_experience)
             initial_score = (relevance * 0.6) + (bonus * 0.4)
-            
+
             results.append({
                 "app_id": app_id,
                 "text": text,
@@ -103,26 +114,25 @@ class AnalyzeJobApplicantsView(APIView):
                 "bonus": bonus
             })
 
-        # 3. Sort for LLM (Top 10 for batch)
+        # 3. Sort and send top candidates to Groq for deep analysis
         results.sort(key=lambda x: x['initial_score'], reverse=True)
-        top_for_groq = results[:10]
-        
-        # Format for Groq (needs list of dicts with 'filename' and 'text')
+        top_for_groq = results[:min(10, len(results))]
+
         groq_input = [{"filename": str(r['app_id']), "text": r['text']} for r in top_for_groq]
-        
+
         final_scores = {}
         if groq_base.available:
-            final_scores = groq_ranker.rank_batch(job.description, groq_input)
+            final_scores = groq_ranker.rank_batch(job_description, groq_input)
 
-        # 4. Save results back to applications
+        # 4. Compute final scores and save back to all applications
         for res in results:
             app = apps_map[res['app_id']]
             app_id_str = str(res['app_id'])
-            
+
             semantic_score = res['initial_score']
             verdict = ""
             strengths = []
-            
+
             if app_id_str in final_scores:
                 g_data = final_scores[app_id_str]
                 if isinstance(g_data, dict):
@@ -133,11 +143,9 @@ class AnalyzeJobApplicantsView(APIView):
                     semantic_score = float(g_data)
 
             final_score = (semantic_score * 0.5) + (res['relevance'] * 0.3) + (res['bonus'] * 0.2)
-            
-            # Application of "University Boost"
             boosted = 0.88 + (final_score ** 0.5) * 0.10 if final_score > 0 else 0
-            
-            app.match_score = boosted
+
+            app.match_score = round(boosted, 4)
             app.analysis_data = {
                 "verdict": verdict,
                 "strengths": strengths,
@@ -145,8 +153,38 @@ class AnalyzeJobApplicantsView(APIView):
                 "skill_bonus": res['bonus']
             }
             app.save()
+            res['match_score'] = app.match_score
+            res['verdict'] = verdict
+            res['strengths'] = strengths
+            res['candidate_name'] = app.candidate_name
+            res['candidate_email'] = app.candidate_email
 
-        return Response({"message": f"Successfully analyzed {len(results)} applicants."}, status=status.HTTP_200_OK)
+        # 5. Return top_k results in response
+        top_results = results[:top_k]
+        response_data = [
+            {
+                "rank": i + 1,
+                "candidate_name": r['candidate_name'],
+                "candidate_email": r['candidate_email'],
+                "match_score": r['match_score'],
+                "match_percentage": f"{round(r['match_score'] * 100, 1)}%",
+                "verdict": r['verdict'],
+                "key_strengths": r['strengths'],
+            }
+            for i, r in enumerate(top_results)
+        ]
+
+        return Response({
+            "job_title": job.title,
+            "total_applicants": len(results),
+            "top_k_requested": top_k,
+            "warning": (
+                f"Only {len(results)} applicant(s) applied, but you requested {top_k}. "
+                f"Showing all available candidates."
+            ) if len(results) < top_k else None,
+            "top_candidates": response_data,
+        }, status=status.HTTP_200_OK)
+
 
 class JobDeleteView(generics.DestroyAPIView):
     """
