@@ -24,7 +24,7 @@ class GroqRanker:
                 "CANDIDATES:\n"
             )
             for c in chunk:
-                prompt += f"- {c['filename']}: LocalRank={c['initial_score']:.2f}. Snip={c['text'][:500]}\n"
+                prompt += f"- {c['filename']}: LocalRank={c.get('initial_score', 0.0):.2f}. Snip={c['text'][:500]}\n"
             
             prompt += (
                 "\nReturn a JSON object where each key is the filename and each value is an object with:\n"

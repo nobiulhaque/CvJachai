@@ -137,7 +137,14 @@ class AnalyzeJobApplicantsView(APIView):
             results.sort(key=lambda x: x['initial_score'], reverse=True)
             top_for_groq = results[:min(10, len(results))]
 
-            groq_input = [{"filename": str(r['app_id']), "text": r['text']} for r in top_for_groq]
+            groq_input = [
+                {
+                    "filename": str(r['app_id']), 
+                    "text": r['text'], 
+                    "initial_score": r['initial_score']
+                } 
+                for r in top_for_groq
+            ]
 
             final_scores = {}
             if groq_base.available:
