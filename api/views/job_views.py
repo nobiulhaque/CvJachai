@@ -137,3 +137,21 @@ class AnalyzeJobApplicantsView(APIView):
             app.save()
 
         return Response({"message": f"Successfully analyzed {len(results)} applicants."}, status=status.HTTP_200_OK)
+
+class JobDeleteView(generics.DestroyAPIView):
+    """
+    Delete a job (Authenticated HR - owner only).
+    """
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'id'
+    lookup_url_kwarg = 'job_id'
+
+    def get_queryset(self):
+        return Job.objects.filter(created_by=self.request.user)
+
+    def delete(self, request, *args, **kwargs):
+        job = self.get_object()
+        job.delete()
+        return Response({"message": "Job deleted successfully."}, status=status.HTTP_200_OK)

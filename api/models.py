@@ -1,5 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
+import uuid
+import secrets
+import string
+
+def generate_short_id():
+    """Generates a compact 10-character unique ID."""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(10))
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -15,6 +23,7 @@ class Profile(models.Model):
         return f"Profile of {self.user.email}"
 
 class Job(models.Model):
+    id = models.CharField(primary_key=True, default=generate_short_id, max_length=12, editable=False)
     title = models.CharField(max_length=255)
     description = models.TextField()
     skills_required = models.TextField(help_text="Comma separated skills")
