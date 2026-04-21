@@ -92,6 +92,12 @@ class AnalyzeJobApplicantsView(APIView):
                     import requests as http_req
                     from engine.utils import extract_text_from_bytes
                     file_url = app.resume_file.url
+                    # Handle relative URLs (for files uploaded before Cloudinary was set up)
+                    if not file_url.startswith('http'):
+                        host = request.get_host()
+                        protocol = 'https' if request.is_secure() else 'http'
+                        file_url = f"{protocol}://{host}{file_url}"
+                    
                     file_name = app.resume_file.name
                     response = http_req.get(file_url, timeout=15)
                     response.raise_for_status()
