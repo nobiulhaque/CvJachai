@@ -124,16 +124,11 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'CvJachai <noreply@cvjachai
 
 # Media files — powered by Cloudinary (survives Render redeploys)
 import cloudinary
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
-}
+import cloudinary.uploader
+import cloudinary.api
 
-# Ensure Cloudinary can use CLOUDINARY_URL if provided
-if os.getenv('CLOUDINARY_URL'):
-    import cloudinary
-    cloudinary.config(cloudinary_url=os.getenv('CLOUDINARY_URL'))
+# This will automatically pick up the CLOUDINARY_URL from your environment variables
+cloudinary.config(secure=True)
 
 STORAGES = {
     "default": {
@@ -143,5 +138,4 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
-
 MEDIA_URL = '/media/'
