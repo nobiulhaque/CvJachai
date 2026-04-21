@@ -7,7 +7,7 @@ import zipfile
 import concurrent.futures
 from pathlib import Path
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from docx import Document
 
 logger = logging.getLogger(__name__)
