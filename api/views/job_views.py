@@ -44,6 +44,13 @@ class ApplyJobView(generics.CreateAPIView):
     serializer_class = ApplicationSerializer
     permission_classes = [permissions.AllowAny]
 
+    def post(self, request, *args, **kwargs):
+        try:
+            return super().post(request, *args, **kwargs)
+        except Exception as e:
+            logger.exception("Apply Job error")
+            return Response({"error": f"Failed to submit application: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class JobApplicationsListView(generics.ListAPIView):
     """
     View list of applicants for a specific job (Authenticated HR - owner only).
