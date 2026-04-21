@@ -33,6 +33,7 @@ urlpatterns = [
     
     # --- Job Portal Endpoints ---
     path('api/jobs/', api_views.JobCreateListView.as_view(), name='job_list_create'),
+    path('api/jobs/my/', api_views.MyJobsView.as_view(), name='my_jobs'),
     path('api/jobs/apply/', api_views.ApplyJobView.as_view(), name='job_apply'),
     path('api/jobs/<str:job_id>/applications/', api_views.JobApplicationsListView.as_view(), name='job_applications'),
     path('api/jobs/<str:job_id>/analyze/', api_views.AnalyzeJobApplicantsView.as_view(), name='job_analyze'),

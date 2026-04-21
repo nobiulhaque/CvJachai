@@ -3,7 +3,7 @@ from .info_view import APIInfoAPIView
 from .optimize_view import ResumeOptimizeAPIView
 from .auth_views import RegisterView, LoginView, ForgotPasswordView, ResetPasswordView
 from .profile_view import ProfileDetailAPIView
-from .job_views import JobCreateListView, ApplyJobView, JobApplicationsListView, AnalyzeJobApplicantsView, JobDeleteView
+from .job_views import JobCreateListView, ApplyJobView, JobApplicationsListView, AnalyzeJobApplicantsView, JobDeleteView, MyJobsView
 
 __all__ = [
     'ResumeClassifyAPIView', 
@@ -18,5 +18,6 @@ __all__ = [
     'ApplyJobView',
     'JobApplicationsListView',
     'AnalyzeJobApplicantsView',
-    'JobDeleteView'
+    'JobDeleteView',
+    'MyJobsView'
 ]

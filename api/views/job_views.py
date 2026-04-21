@@ -25,6 +25,16 @@ class JobCreateListView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
+class MyJobsView(generics.ListAPIView):
+    """
+    Returns only the jobs created by the authenticated user (HR dashboard).
+    """
+    serializer_class = JobSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Job.objects.filter(created_by=self.request.user).order_by('-created_at')
+
 class ApplyJobView(generics.CreateAPIView):
     """
     Apply for a job without login (Public).
