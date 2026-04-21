@@ -1,4 +1,5 @@
 import logging
+import requests
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -64,137 +65,140 @@ class AnalyzeJobApplicantsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, job_id):
-        job = get_object_or_404(Job, id=job_id, created_by=self.request.user)
-        applications = Application.objects.filter(job=job)
-
-        if not applications.exists():
-            return Response({"error": "No applicants to analyze."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # --- Read top_k from request body (default: return all) ---
         try:
-            top_k = int(request.data.get('top_k', len(applications)))
-            if top_k < 1:
-                top_k = 1
-        except (ValueError, TypeError):
-            top_k = len(applications)
+            job = get_object_or_404(Job, id=job_id, created_by=self.request.user)
+            applications = Application.objects.filter(job=job)
 
-        # --- Pull job details automatically from the Job model ---
-        job_description = job.description
-        skills_list = [s.strip() for s in job.skills_required.split(',') if s.strip()]
-        min_experience = job.min_experience
+            if not applications.exists():
+                return Response({"error": "No applicants to analyze."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. Extract text from all resumes
-        resume_texts = {}
-        apps_map = {}
-        for app in applications:
-            if app.resume_file:
-                try:
-                    import requests as http_req
-                    from engine.utils import extract_text_from_bytes
-                    file_url = app.resume_file.url
-                    # Handle relative URLs (for files uploaded before Cloudinary was set up)
-                    if not file_url.startswith('http'):
-                        host = request.get_host()
-                        protocol = 'https' if request.is_secure() else 'http'
-                        file_url = f"{protocol}://{host}{file_url}"
-                    
-                    file_name = app.resume_file.name
-                    response = http_req.get(file_url, timeout=15)
-                    response.raise_for_status()
-                    text = extract_text_from_bytes(response.content, file_name)
-                    resume_texts[app.id] = text
-                    apps_map[app.id] = app
-                except Exception as e:
-                    logger.warning(f"Failed to extract text for app {app.id}: {e}")
+            # --- Read top_k from request body (default: return all) ---
+            try:
+                top_k = int(request.data.get('top_k', len(applications)))
+                if top_k < 1:
+                    top_k = 1
+            except (ValueError, TypeError):
+                top_k = len(applications)
 
-        if not resume_texts:
-            return Response({"error": "Could not extract text from any applicant resumes."}, status=status.HTTP_400_BAD_REQUEST)
+            # --- Pull job details automatically from the Job model ---
+            job_description = job.description
+            skills_list = [s.strip() for s in job.skills_required.split(',') if s.strip()]
+            min_experience = job.min_experience
 
-        # 2. Run local keyword + skill analysis
-        results = []
-        for app_id, text in resume_texts.items():
-            relevance = calculate_job_relevance(text, job_description)
-            bonus = calculate_skill_bonus(text, skills_list, min_experience)
-            initial_score = (relevance * 0.6) + (bonus * 0.4)
+            # 1. Extract text from all resumes
+            resume_texts = {}
+            apps_map = {}
+            for app in applications:
+                if app.resume_file:
+                    try:
+                        from engine.utils import extract_text_from_bytes
+                        file_url = app.resume_file.url
+                        # Handle relative URLs (for files uploaded before Cloudinary was set up)
+                        if not file_url.startswith('http'):
+                            host = request.get_host()
+                            protocol = 'https' if request.is_secure() else 'http'
+                            file_url = f"{protocol}://{host}{file_url}"
+                        
+                        file_name = app.resume_file.name
+                        response = requests.get(file_url, timeout=15)
+                        response.raise_for_status()
+                        text = extract_text_from_bytes(response.content, file_name)
+                        resume_texts[app.id] = text
+                        apps_map[app.id] = app
+                    except Exception as e:
+                        logger.warning(f"Failed to extract text for app {app.id}: {e}")
 
-            results.append({
-                "app_id": app_id,
-                "text": text,
-                "initial_score": initial_score,
-                "relevance": relevance,
-                "bonus": bonus
-            })
+            if not resume_texts:
+                return Response({"error": "Could not extract text from any applicant resumes."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 3. Sort and send top candidates to Groq for deep analysis
-        results.sort(key=lambda x: x['initial_score'], reverse=True)
-        top_for_groq = results[:min(10, len(results))]
+            # 2. Run local keyword + skill analysis
+            results = []
+            for app_id, text in resume_texts.items():
+                relevance = calculate_job_relevance(text, job_description)
+                bonus = calculate_skill_bonus(text, skills_list, min_experience)
+                initial_score = (relevance * 0.6) + (bonus * 0.4)
 
-        groq_input = [{"filename": str(r['app_id']), "text": r['text']} for r in top_for_groq]
+                results.append({
+                    "app_id": app_id,
+                    "text": text,
+                    "initial_score": initial_score,
+                    "relevance": relevance,
+                    "bonus": bonus
+                })
 
-        final_scores = {}
-        if groq_base.available:
-            final_scores = groq_ranker.rank_batch(job_description, groq_input)
+            # 3. Sort and send top candidates to Groq for deep analysis
+            results.sort(key=lambda x: x['initial_score'], reverse=True)
+            top_for_groq = results[:min(10, len(results))]
 
-        # 4. Compute final scores and save back to all applications
-        for res in results:
-            app = apps_map[res['app_id']]
-            app_id_str = str(res['app_id'])
+            groq_input = [{"filename": str(r['app_id']), "text": r['text']} for r in top_for_groq]
 
-            semantic_score = res['initial_score']
-            verdict = ""
-            strengths = []
+            final_scores = {}
+            if groq_base.available:
+                final_scores = groq_ranker.rank_batch(job_description, groq_input)
 
-            if app_id_str in final_scores:
-                g_data = final_scores[app_id_str]
-                if isinstance(g_data, dict):
-                    semantic_score = float(g_data.get('score', 0.5))
-                    verdict = g_data.get('verdict', '')
-                    strengths = g_data.get('strengths', [])
-                else:
-                    semantic_score = float(g_data)
+            # 4. Compute final scores and save back to all applications
+            for res in results:
+                app = apps_map[res['app_id']]
+                app_id_str = str(res['app_id'])
 
-            final_score = (semantic_score * 0.5) + (res['relevance'] * 0.3) + (res['bonus'] * 0.2)
-            boosted = 0.88 + (final_score ** 0.5) * 0.10 if final_score > 0 else 0
+                semantic_score = res['initial_score']
+                verdict = ""
+                strengths = []
 
-            app.match_score = round(boosted, 4)
-            app.analysis_data = {
-                "verdict": verdict,
-                "strengths": strengths,
-                "raw_relevance": res['relevance'],
-                "skill_bonus": res['bonus']
-            }
-            app.save()
-            res['match_score'] = app.match_score
-            res['verdict'] = verdict
-            res['strengths'] = strengths
-            res['candidate_name'] = app.candidate_name
-            res['candidate_email'] = app.candidate_email
+                if app_id_str in final_scores:
+                    g_data = final_scores[app_id_str]
+                    if isinstance(g_data, dict):
+                        semantic_score = float(g_data.get('score', 0.5))
+                        verdict = g_data.get('verdict', '')
+                        strengths = g_data.get('strengths', [])
+                    else:
+                        semantic_score = float(g_data)
 
-        # 5. Return top_k results in response
-        top_results = results[:top_k]
-        response_data = [
-            {
-                "rank": i + 1,
-                "candidate_name": r['candidate_name'],
-                "candidate_email": r['candidate_email'],
-                "match_score": r['match_score'],
-                "match_percentage": f"{round(r['match_score'] * 100, 1)}%",
-                "verdict": r['verdict'],
-                "key_strengths": r['strengths'],
-            }
-            for i, r in enumerate(top_results)
-        ]
+                final_score = (semantic_score * 0.5) + (res['relevance'] * 0.3) + (res['bonus'] * 0.2)
+                boosted = 0.88 + (final_score ** 0.5) * 0.10 if final_score > 0 else 0
 
-        return Response({
-            "job_title": job.title,
-            "total_applicants": len(results),
-            "top_k_requested": top_k,
-            "warning": (
-                f"Only {len(results)} applicant(s) applied, but you requested {top_k}. "
-                f"Showing all available candidates."
-            ) if len(results) < top_k else None,
-            "top_candidates": response_data,
-        }, status=status.HTTP_200_OK)
+                app.match_score = round(boosted, 4)
+                app.analysis_data = {
+                    "verdict": verdict,
+                    "strengths": strengths,
+                    "raw_relevance": res['relevance'],
+                    "skill_bonus": res['bonus']
+                }
+                app.save()
+                res['match_score'] = app.match_score
+                res['verdict'] = verdict
+                res['strengths'] = strengths
+                res['candidate_name'] = app.candidate_name
+                res['candidate_email'] = app.candidate_email
+
+            # 5. Return top_k results in response
+            top_results = results[:top_k]
+            response_data = [
+                {
+                    "rank": i + 1,
+                    "candidate_name": r['candidate_name'],
+                    "candidate_email": r['candidate_email'],
+                    "match_score": r['match_score'],
+                    "match_percentage": f"{round(r['match_score'] * 100, 1)}%",
+                    "verdict": r['verdict'],
+                    "key_strengths": r['strengths'],
+                }
+                for i, r in enumerate(top_results)
+            ]
+
+            return Response({
+                "job_title": job.title,
+                "total_applicants": len(results),
+                "top_k_requested": top_k,
+                "warning": (
+                    f"Only {len(results)} applicant(s) applied, but you requested {top_k}. "
+                    f"Showing all available candidates."
+                ) if len(results) < top_k else None,
+                "top_candidates": response_data,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.exception("Analysis error")
+            return Response({"error": f"Internal analysis error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class JobDeleteView(generics.DestroyAPIView):
