@@ -27,25 +27,26 @@ class APIInfoAPIView(APIView):
                 "POST /api/auth/signup": "Create account",
                 "POST /api/auth/signin": "Login & obtain JWT tokens",
                 "GET/PATCH /api/auth/profile": "Professional profile management",
-                "POST /api/token/refresh/": "Fetch new access tokens",
-                "POST /api/classify": "Massive resume ranking (Groq AI)",
-                "POST /api/optimize": "AI-powered ATS Resume Rewrite",
-                "GET /dashboard/": "Premium Admin Intelligence Dashboard"
+                "POST /api/jobs/": "Create a new job posting (HR)",
+                "GET /api/jobs/my/": "View your job postings",
+                "POST /api/jobs/apply/": "Public job application submission",
+                "POST /api/jobs/<id>/analyze/": "AI-driven candidate screening (Top-K)",
+                "POST /api/classify": "Massive resume ranking (Legacy)",
+                "POST /api/optimize": "AI-powered ATS Resume Rewrite"
             },
             "security": {
                 "protocol": "JWT + DRF Throttling",
                 "environment": "Fully secured via environment variables",
-                "password_policy": "Strict (8+ chars, complex validation)",
-                "rate_limit": "20/hr (Anon), 100/hr (User)"
+                "storage": "Cloudinary (Persistent Media Storage)"
             },
             "supported_formats": ["PDF", "DOCX", "TXT", "ZIP", "PNG", "JPG", "JPEG"],
             "features": [
-                "Massive Scale: Processes 1000+ resumes per batch",
-                "Cloud-Native: Powered entirely by Groq's ultra-fast AI inference",
-                "Vision AI: Llama 4 Scout reads resume images directly (no local OCR)",
-                "Auto Model Discovery: Always uses the best available Groq model",
-                "Premium Dashboard: Glassmorphism UI at /dashboard/",
-                "Zero Heavy Dependencies: Lightweight deployment on free-tier cloud",
+                "Massive Scale: Processes batches of resumes via Cloudinary pipeline",
+                "AI Screening: Smart Top-K candidate selection using Groq GPT-OSS",
+                "Persistent Storage: Resumes are safely stored in Cloudinary",
+                "Zero Data Loss: Survives ephemeral disk wipes on Render/Heroku",
+                "Premium Dashboard: Glassmorphism UI for HR management",
+                "Short IDs: Unique 10-char alphanumeric job IDs"
             ]
         }
         
