@@ -138,15 +138,28 @@ class ForgotPasswordView(generics.GenericAPIView):
                 PasswordResetOTP.objects.create(email=email, otp_code=otp)
                 
                 try:
-                    send_mail(
-                        'Your Password Reset OTP',
-                        f'Your OTP for password reset is: {otp}\nThis code will expire in 10 minutes.',
-                        settings.DEFAULT_FROM_EMAIL,
-                        [email],
-                        fail_silently=False,
-                    )
+                    import resend
+                    resend.api_key = os.getenv("RESEND_API_KEY", "re_EKJus3Zv_9v1xeqKcjMivio94vJU25Dp2")
+                    
+                    resend.Emails.send({
+                        "from": os.getenv("DEFAULT_FROM_EMAIL", "onboarding@resend.dev"),
+                        "to": email,
+                        "subject": "Your Password Reset OTP",
+                        "html": f"""
+                            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                <h2 style="color: #333;">Password Reset Request</h2>
+                                <p>Your OTP for password reset is:</p>
+                                <div style="font-size: 24px; font-weight: bold; color: #007bff; padding: 10px; background: #f8f9fa; display: inline-block; border-radius: 5px;">
+                                    {otp}
+                                </div>
+                                <p style="color: #666; margin-top: 20px;">This code will expire in 10 minutes.</p>
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                                <p style="font-size: 12px; color: #999;">If you didn't request this, please ignore this email.</p>
+                            </div>
+                        """
+                    })
                 except Exception as e:
-                    return Response({"error": f"Failed to send email: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    return Response({"error": f"Failed to send email via Resend: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
             # Always return success to prevent email enumeration
             return Response({"message": "If an account with this email exists, an OTP has been sent."}, status=status.HTTP_200_OK)
