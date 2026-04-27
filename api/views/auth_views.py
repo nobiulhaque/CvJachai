@@ -1,3 +1,4 @@
+import os
 from django.contrib.auth.models import User
 from api.models import Profile
 from rest_framework import generics, status
@@ -139,10 +140,11 @@ class ForgotPasswordView(generics.GenericAPIView):
                 
                 try:
                     import resend
-                    resend.api_key = os.getenv("RESEND_API_KEY", "re_EKJus3Zv_9v1xeqKcjMivio94vJU25Dp2")
+                    from django.conf import settings
+                    resend.api_key = settings.RESEND_API_KEY or "re_EKJus3Zv_9v1xeqKcjMivio94vJU25Dp2"
                     
                     resend.Emails.send({
-                        "from": os.getenv("DEFAULT_FROM_EMAIL", "onboarding@resend.dev"),
+                        "from": settings.DEFAULT_FROM_EMAIL or "onboarding@resend.dev",
                         "to": email,
                         "subject": "Your Password Reset OTP",
                         "html": f"""
