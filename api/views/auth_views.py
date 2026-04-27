@@ -89,6 +89,9 @@ class ResetPasswordSerializer(serializers.Serializer):
         validate_password(value)
         return value
 
+class GoogleLoginSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
 # --- Views ---
 
 class RegisterView(generics.CreateAPIView):
@@ -207,4 +210,76 @@ class ResetPasswordView(generics.GenericAPIView):
                     return Response({"error": "User with this email no longer exists."}, status=status.HTTP_404_NOT_FOUND)
             else:
                 return Response({"error": "Invalid or expired OTP."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class GoogleLoginView(generics.GenericAPIView):
+    """
+    Endpoint to authenticate users via Google.
+    Expects a Google ID Token from the frontend.
+    """
+    permission_classes = (AllowAny,)
+    serializer_class = GoogleLoginSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            token = serializer.validated_data['token']
+            
+            from google.oauth2 import id_token
+            from google.auth.transport import requests as google_requests
+            from django.conf import settings
+            from rest_framework_simplejwt.tokens import RefreshToken
+
+            try:
+                # Verify the ID Token with Google
+                id_info = id_token.verify_oauth2_token(
+                    token, 
+                    google_requests.Request(), 
+                    settings.GOOGLE_CLIENT_ID
+                )
+
+                # Get user info from Google's verified payload
+                email = id_info.get('email')
+                first_name = id_info.get('given_name', '')
+                last_name = id_info.get('family_name', '')
+
+                if not email:
+                    return Response({"error": "Invalid token: Email not provided by Google."}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Find or create the user
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={
+                        'username': email,
+                        'first_name': first_name,
+                        'last_name': last_name,
+                    }
+                )
+
+                if created:
+                    # Create profile for new user
+                    Profile.objects.create(user=user)
+
+                # Generate JWT tokens for the user
+                refresh = RefreshToken.for_user(user)
+                
+                # Custom response matching your LoginView structure
+                return Response({
+                    "message": "Login successful",
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                    "user": {
+                        "email": user.email,
+                        "full_name": f"{user.first_name} {user.last_name}".strip(),
+                        "is_staff": user.is_staff,
+                        "location": getattr(user.profile, 'location', None),
+                        "profession": getattr(user.profile, 'profession', None),
+                    }
+                }, status=status.HTTP_200_OK)
+
+            except ValueError:
+                return Response({"error": "Invalid or expired Google token."}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                return Response({"error": f"Google authentication failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

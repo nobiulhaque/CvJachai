@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="{% static 'style.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div class="glow-blob glow-blob-1"></div>
@@ -30,8 +32,11 @@
                 </ul>
             </nav>
 
-            <div style="margin-top: auto;">
-                <a href="#" style="color: var(--danger); opacity: 0.8;">
+            <div style="margin-top: auto; padding: 1rem;">
+                <!-- Google Login Button Container -->
+                <div id="google-login-button" style="margin-bottom: 1rem;"></div>
+
+                <a href="#" id="logout-btn" style="color: var(--danger); opacity: 0.8; display: none;">
                     <i class="fas fa-power-off"></i>
                     <span class="sidebar-text">Logout</span>
                 </a>
