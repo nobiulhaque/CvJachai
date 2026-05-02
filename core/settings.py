@@ -29,10 +29,12 @@ INSTALLED_APPS = [
     'cloudinary',
     'rest_framework',
     'rest_framework_simplejwt',
+    'corsheaders',
     'api',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -141,3 +143,10 @@ STORAGES = {
     },
 }
 MEDIA_URL = '/media/'
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "https://cvjacai.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:5174",
+]
