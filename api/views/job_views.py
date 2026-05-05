@@ -1,4 +1,5 @@
 import logging
+import os
 import requests
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
@@ -95,25 +96,42 @@ class AnalyzeJobApplicantsView(APIView):
             # 1. Extract text from all resumes
             resume_texts = {}
             apps_map = {}
+            from engine.utils import extract_text_from_bytes
+            
             for app in applications:
-                if app.resume_file:
+                if not app.resume_file:
+                    continue
+                    
+                try:
+                    file_name = app.resume_file.name
+                    # Try to read directly if it's local storage to avoid self-requests (prevents deadlocks)
                     try:
-                        from engine.utils import extract_text_from_bytes
-                        file_url = app.resume_file.url
-                        # Handle relative URLs (for files uploaded before Cloudinary was set up)
-                        if not file_url.startswith('http'):
-                            host = request.get_host()
-                            protocol = 'https' if request.is_secure() else 'http'
-                            file_url = f"{protocol}://{host}{file_url}"
-                        
-                        file_name = app.resume_file.name
-                        response = requests.get(file_url, timeout=15)
-                        response.raise_for_status()
-                        text = extract_text_from_bytes(response.content, file_name)
-                        resume_texts[app.id] = text
-                        apps_map[app.id] = app
-                    except Exception as e:
-                        logger.warning(f"Failed to extract text for app {app.id}: {e}")
+                        # Check if the storage is local
+                        if hasattr(app.resume_file.storage, 'path'):
+                            file_path = app.resume_file.path
+                            if os.path.exists(file_path):
+                                with open(file_path, 'rb') as f:
+                                    content = f.read()
+                                text = extract_text_from_bytes(content, file_name)
+                                resume_texts[app.id] = text
+                                apps_map[app.id] = app
+                                continue
+                    except (NotImplementedError, AttributeError):
+                        # Remote storage (Cloudinary) doesn't support .path
+                        pass
+
+                    # Fallback to downloading via URL (for Cloudinary or remote storage)
+                    file_url = app.resume_file.url
+                    if not file_url.startswith('http'):
+                        file_url = request.build_absolute_uri(file_url)
+                    
+                    response = requests.get(file_url, timeout=20)
+                    response.raise_for_status()
+                    text = extract_text_from_bytes(response.content, file_name)
+                    resume_texts[app.id] = text
+                    apps_map[app.id] = app
+                except Exception as e:
+                    logger.warning(f"Failed to extract text for app {app.id}: {e}")
 
             if not resume_texts:
                 return Response({"error": "Could not extract text from any applicant resumes."}, status=status.HTTP_400_BAD_REQUEST)

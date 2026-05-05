@@ -127,22 +127,31 @@ RESEND_API_KEY = os.getenv('RESEND_API_KEY')
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 
 # Media files — powered by Cloudinary (survives Render redeploys)
-import os
 import cloudinary
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # This will automatically use CLOUDINARY_URL from the environment
 if os.getenv('CLOUDINARY_URL'):
     cloudinary.config(secure=True)
-
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.RawMediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
-MEDIA_URL = '/media/'
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.RawMediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [

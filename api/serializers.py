@@ -131,8 +131,32 @@ class JobSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_by', 'created_at', 'is_active')
 
 class ApplicationSerializer(serializers.ModelSerializer):
+    resume_download_url = serializers.SerializerMethodField()
+
     class Meta:
         from .models import Application
         model = Application
-        fields = ('job', 'candidate_name', 'candidate_email', 'resume_file', 'applied_at', 'match_score', 'analysis_data')
+        fields = ('id', 'job', 'candidate_name', 'candidate_email', 'resume_file', 'resume_download_url', 'applied_at', 'match_score', 'analysis_data')
         read_only_fields = ('applied_at', 'match_score', 'analysis_data')
+
+    def get_resume_download_url(self, obj):
+        if not obj.resume_file:
+            return None
+        
+        request = self.context.get('request')
+        file_url = obj.resume_file.url
+        
+        # If it's a Cloudinary URL, we can add 'fl_attachment' to force download
+        if 'res.cloudinary.com' in file_url:
+            # Cloudinary raw files use /raw/upload/. We insert fl_attachment after /upload/
+            if '/upload/' in file_url:
+                return file_url.replace('/upload/', '/upload/fl_attachment/')
+            return file_url
+
+        # If it's a local URL, we use our backend's media serve view which forces download
+        if not file_url.startswith('http') and request:
+            # Convert /media/path/to/file to /media/path/to/file
+            # The urls.py already handles /media/<path> with as_attachment=True
+            return request.build_absolute_uri(file_url)
+        
+        return file_url
