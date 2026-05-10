@@ -142,29 +142,35 @@ class ForgotPasswordView(generics.GenericAPIView):
                 PasswordResetOTP.objects.create(email=email, otp_code=otp)
                 
                 try:
-                    import resend
-                    from django.conf import settings
-                    resend.api_key = settings.RESEND_API_KEY or "re_EKJus3Zv_9v1xeqKcjMivio94vJU25Dp2"
-                    
-                    resend.Emails.send({
-                        "from": settings.DEFAULT_FROM_EMAIL or "onboarding@resend.dev",
-                        "to": email,
-                        "subject": "Your Password Reset OTP",
-                        "html": f"""
-                            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                                <h2 style="color: #333;">Password Reset Request</h2>
-                                <p>Your OTP for password reset is:</p>
-                                <div style="font-size: 24px; font-weight: bold; color: #007bff; padding: 10px; background: #f8f9fa; display: inline-block; border-radius: 5px;">
-                                    {otp}
-                                </div>
-                                <p style="color: #666; margin-top: 20px;">This code will expire in 10 minutes.</p>
-                                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                                <p style="font-size: 12px; color: #999;">If you didn't request this, please ignore this email.</p>
+                    from django.core.mail import send_mail
+                    from django.template.loader import render_to_string
+                    from django.utils.html import strip_tags
+
+                    subject = "Your Password Reset OTP"
+                    html_message = f"""
+                        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                            <h2 style="color: #333;">Password Reset Request</h2>
+                            <p>Your OTP for password reset is:</p>
+                            <div style="font-size: 24px; font-weight: bold; color: #007bff; padding: 10px; background: #f8f9fa; display: inline-block; border-radius: 5px;">
+                                {otp}
                             </div>
-                        """
-                    })
+                            <p style="color: #666; margin-top: 20px;">This code will expire in 10 minutes.</p>
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                            <p style="font-size: 12px; color: #999;">If you didn't request this, please ignore this email.</p>
+                        </div>
+                    """
+                    plain_message = strip_tags(html_message)
+                    
+                    send_mail(
+                        subject,
+                        plain_message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                        html_message=html_message,
+                        fail_silently=False,
+                    )
                 except Exception as e:
-                    return Response({"error": f"Failed to send email via Resend: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    return Response({"error": f"Failed to send email: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
             # Always return success to prevent email enumeration
             return Response({"message": "If an account with this email exists, an OTP has been sent."}, status=status.HTTP_200_OK)
