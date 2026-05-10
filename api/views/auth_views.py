@@ -259,6 +259,14 @@ class GoogleLoginView(generics.GenericAPIView):
                 email = id_info.get('email')
                 first_name = id_info.get('given_name', '')
                 last_name = id_info.get('family_name', '')
+                
+                # --- Fallback: Extract name from email if Google profile name is empty ---
+                if not first_name and email:
+                    # Extract part before @ and capitalize it
+                    email_name = email.split('@')[0]
+                    # Remove numbers and special characters for a cleaner name
+                    clean_name = ''.join([i for i in email_name if not i.isdigit()]).replace('.', ' ').replace('_', ' ').strip().title()
+                    first_name = clean_name or email_name.capitalize()
 
                 if not email:
                     return Response({"error": "Invalid token: Email not provided by Google."}, status=status.HTTP_400_BAD_REQUEST)
