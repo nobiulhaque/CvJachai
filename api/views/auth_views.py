@@ -245,6 +245,9 @@ class GoogleLoginView(generics.GenericAPIView):
             from rest_framework_simplejwt.tokens import RefreshToken
 
             try:
+                if not settings.GOOGLE_CLIENT_ID:
+                    return Response({"error": "Google Login is not configured on the server."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
                 # Verify the ID Token with Google
                 id_info = id_token.verify_oauth2_token(
                     token, 
