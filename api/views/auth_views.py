@@ -170,7 +170,15 @@ class ForgotPasswordView(generics.GenericAPIView):
                         fail_silently=False,
                     )
                 except Exception as e:
-                    return Response({"error": f"Failed to send email: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    return Response({
+                        "error": f"Failed to send email: {str(e)}",
+                        "debug_info": {
+                            "host": getattr(settings, 'EMAIL_HOST', 'not set'),
+                            "port": getattr(settings, 'EMAIL_PORT', 'not set'),
+                            "use_tls": getattr(settings, 'EMAIL_USE_TLS', 'not set'),
+                            "use_ssl": getattr(settings, 'EMAIL_USE_SSL', 'not set'),
+                        }
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
             # Always return success to prevent email enumeration
             return Response({"message": "If an account with this email exists, an OTP has been sent."}, status=status.HTTP_200_OK)
