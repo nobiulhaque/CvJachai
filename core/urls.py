@@ -43,6 +43,6 @@ urlpatterns = [
 
     path('dashboard/', TemplateView.as_view(template_name='index.html'), name='dashboard'),
     path('api/', api_views.APIInfoAPIView.as_view(), name='api_info'),
-    path('', api_views.APIInfoAPIView.as_view(), name='root'),
+    path('', TemplateView.as_view(template_name='index.html'), name='root'),
     path('media/<path:path>', serve_media_file, name='media_serve'),
 ]
