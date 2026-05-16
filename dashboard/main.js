@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- Google Login Logic ---
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "1036628247859-0o1d664qrn16suiub66j1lv5lm6lle4t.apps.googleusercontent.com";
 
 window.onload = function () {
     google.accounts.id.initialize({
