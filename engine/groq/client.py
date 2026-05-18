@@ -1,9 +1,11 @@
 import os
 import logging
 from groq import Groq
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(BASE_DIR / '.env')
 logger = logging.getLogger(__name__)
 
 class GroqClient:
@@ -12,8 +14,8 @@ class GroqClient:
     def __init__(self):
         self.api_key = os.getenv("API_KEY")
         self.client = None
-        self.ranker_model = "openai/gpt-oss-120b"           # Best on Groq
-        self.optimizer_model = "openai/gpt-oss-120b"         # Best on Groq
+        self.ranker_model = "llama-3.3-70b-versatile"           # Best on Groq
+        self.optimizer_model = "llama-3.3-70b-versatile"         # Best on Groq
         self.vision_model = "meta-llama/llama-4-scout-17b-16e-instruct"  # Official vision model
         self._available = False
 
