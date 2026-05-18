@@ -7,9 +7,10 @@ from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
 
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Explicitly load .env from BASE_DIR so Phusion Passenger finds it regardless of CWD
+load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-dev-key-change-me')
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
@@ -157,4 +158,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://cvjacai.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
+    "https://cvjachai.online",
+    "https://www.cvjachai.online",
 ]
+
