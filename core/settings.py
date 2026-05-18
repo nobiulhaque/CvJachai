@@ -129,7 +129,7 @@ GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 # Media files — powered by Cloudinary (survives Render redeploys)
 import cloudinary
 
-MEDIA_URL = '/media/'
+MEDIA_URL = '/api/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # This will automatically use CLOUDINARY_URL from the environment
