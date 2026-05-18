@@ -32,6 +32,28 @@ classifier = create_classifier(model_dir="models")
 _SEMANTIC_RERANK_K = 20
 
 
+import shutil
+import time
+
+def cleanup_old_resumes(max_age_hours=24):
+    """Automatically delete resume batch folders older than max_age_hours."""
+    try:
+        resumes_dir = os.path.join(settings.MEDIA_ROOT, 'resumes')
+        if not os.path.exists(resumes_dir):
+            return
+            
+        now = time.time()
+        for batch_folder in os.listdir(resumes_dir):
+            batch_path = os.path.join(resumes_dir, batch_folder)
+            if os.path.isdir(batch_path):
+                folder_age = now - os.path.getmtime(batch_path)
+                if folder_age > (max_age_hours * 3600):
+                    shutil.rmtree(batch_path, ignore_errors=True)
+                    logger.info("Cleaned up old resume batch: %s", batch_folder)
+    except Exception as e:
+        logger.error("Error cleaning up old resumes: %s", e)
+
+
 class ResumeClassifyAPIView(APIView):
     """API endpoint for classifying resumes."""
     
@@ -41,6 +63,9 @@ class ResumeClassifyAPIView(APIView):
         """
         Classify and rank uploaded resumes against a job circular.
         """
+        # Automatically clean up resume batches older than 24 hours
+        cleanup_old_resumes(max_age_hours=24)
+        
         serializer = ResumeUploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(

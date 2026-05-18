@@ -6,19 +6,32 @@ import os
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
-from django.http import FileResponse, Http404
+from django.http import HttpResponse, Http404
 from django.views.generic import TemplateView
 from api import views as api_views
-
 from rest_framework_simplejwt.views import TokenRefreshView
+import mimetypes
+import logging
+from urllib.parse import unquote
 
+logger = logging.getLogger(__name__)
 
 def serve_media_file(request, path):
-    """Production-safe media file serving view."""
-    file_path = os.path.join(settings.MEDIA_ROOT, path)
+    """Production-safe media file serving view compatible with LiteSpeed/Phusion Passenger."""
+    decoded_path = unquote(path)
+    file_path = os.path.join(settings.MEDIA_ROOT, decoded_path)
     if not os.path.exists(file_path):
+        logger.error(f"Media file not found: requested={path}, decoded={decoded_path}, full_path={file_path}")
         raise Http404("File not found")
-    return FileResponse(open(file_path, 'rb'), as_attachment=True)
+    
+    with open(file_path, 'rb') as f:
+        data = f.read()
+        
+    content_type, _ = mimetypes.guess_type(file_path)
+    response = HttpResponse(data, content_type=content_type or 'application/octet-stream')
+    response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+    response['Content-Length'] = len(data)
+    return response
 
 api_patterns = [
     path('auth/signup', api_views.RegisterView.as_view(), name='auth_signup'),
