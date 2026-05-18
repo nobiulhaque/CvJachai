@@ -5,8 +5,8 @@ from .client import groq_base
 
 logger = logging.getLogger(__name__)
 
-CHUNK_SIZE = 5
-DELAY = 2.0
+CHUNK_SIZE = 10
+DELAY = 0.5
 
 class GroqRanker:
     """Specialized engine for ranking large batches of resumes."""

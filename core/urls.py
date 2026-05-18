@@ -39,13 +39,14 @@ api_patterns = [
     path('jobs/<str:job_id>/analyze/', api_views.AnalyzeJobApplicantsView.as_view(), name='job_analyze'),
     path('jobs/<str:job_id>/delete/', api_views.JobDeleteView.as_view(), name='job_delete'),
     # ----------------------------
+    path('media/<path:path>', serve_media_file, name='media_serve'),
     path('', api_views.APIInfoAPIView.as_view(), name='api_info'),
 ]
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('dashboard/', TemplateView.as_view(template_name='index.html'), name='dashboard'),
-    path('media/<path:path>', serve_media_file, name='media_serve'),
+    path('media/<path:path>', serve_media_file, name='media_serve_root'),
     
     # Include API patterns both with and without 'api/' prefix to support
     # both local development and cPanel Phusion Passenger (which strips /api)

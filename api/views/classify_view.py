@@ -111,7 +111,7 @@ class ResumeClassifyAPIView(APIView):
 
             # Sort and subset for Groq
             local_results.sort(key=lambda x: x['initial_score'], reverse=True)
-            top_for_groq = local_results[:50]
+            top_for_groq = local_results[:15]
 
             # ---- Stage 6: Groq Judgement ----
             final_scores = {}
